@@ -31,6 +31,7 @@ supported and this script will not be confused by specifying the same directory
 multiple times on the command line or specifying a directory and its parent.)
 
 @todo:
+ - Decide what to do in the face of my discovery of https://github.com/sahib/rmlint
  - Rewrite this to put the grouping logic in a single groupByKey(paths, keymaker)
    function.
  - As I understand it, fnmatch.fnmatch uses regexes internally and doesn't cache
@@ -61,6 +62,7 @@ multiple times on the command line or specifying a directory and its parent.)
  - Add a mode which caches hashes indexed by (path,size,mtime/ctime) so users can
    trade away a bit of accuracy for a lot more speed.
  - Look into supporting gettext localization.
+ - Support displaying duplicated directory trees as single results.
  - Once ready, announce this in a comment at
    http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/
 """
