@@ -145,17 +145,18 @@ HEAD_SIZE  = 65536 #: Limit for how many bytes will be read to compare headers
 #: agree on for 7200 RPM drives) and 73MB/s (lower bound for 15K RPM drives
 #: according to manufacturer data sheets), then the point where read time
 #: overtakes seek time in best-case scenarios for pseudo-parallel reads is at::
-#:  73 * (3.0 / 1000) = 0.219
+#:  73 MB/s / 1000 ms/s * 3.0ms = 0.219MB = 219KB
+#:  219KB * (1000/1024 KB/KiB) = 213.8672KiB
 #:
-#: As such, 220KiB (round to a multiple of 4KiB) should be a good rule-of-thumb
-#: lower bound for chunk sizes. (Actual chunk size must take available RAM into
-#: account since, theoretically, a user may use this on a system with tons of
-#: dupes of a single file)
+#: As such, 216KiB (round up to a multiple of 4KiB) should be a good
+#: rule-of-thumb lower bound for chunk sizes. (Actual chunk size must take
+#: available RAM into account since, theoretically, a user may use this on a
+#: system with tons of dupes of a single file)
 #:
 #: @todo: Actually use this value.
 #: @todo: Gather statistical information on the characteristics of
 #: commonly-duplicated files to further tune this.
-IDEAL_MIN_CHUNK_SIZE = 220 * 1024
+IDEAL_MIN_CHUNK_SIZE = 216 * 1024
 
 #{ General Helper Functions
 
