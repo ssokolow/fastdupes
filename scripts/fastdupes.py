@@ -15,9 +15,9 @@ vanishingly-small but present risk of hash collisions, also supports exact
 file comparison.
 
 (Exact comparison does a lot of seeking, so it will be significantly slower
-on a traditional hard drive, but will probably be noticeably faster on a
-solid-state drive since it reads files incrementally and can stop as soon as
-a difference is encountered.)
+on a traditional hard drive, but may be noticeably faster on a solid-state
+drive since it reads files incrementally and can stop as soon as a difference
+is encountered.)
 
 Grouping by size and doing a preliminary pass to compare file headers are both
 used to significantly reduce the amount of comparison necessary. This also
