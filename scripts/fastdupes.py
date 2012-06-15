@@ -8,146 +8,220 @@ Inspired by Dave Bolton's dedupe.py (http://davebolton.net/blog/?p=173) and
 Reasonable Software's NoClone.
 
 A simple script which identifies duplicate files several orders of magnitude
-more quickly than fdupes by using smarter algorithms. Most importantly, rather
-than calculating the MD5 sums for all files with non-unique sizes, this script
-groups files by their size and then does incremental comparisons.
+more quickly than fdupes by using smarter algorithms.
 
-As such, files can be read in 4KiB chunks and the script will only read as many
-chunks as it needs in order to confirm that a file is unique. (There is no way
-to avoid reading the entire file if it does have duplicates)
+This script supports both comparison by SHA1 hash and, to eliminate the
+vanishingly-small but present risk of hash collisions, also supports exact
+file comparison.
 
-In addition, this script eliminates the tiny but present risk of hash collisions
-causing false positives by doing byte-by-byte comparison rather than hashing the
-files and then comparing hashes. This doesn't slow the process down because
-each chunk is only read from the disk once and duplicate-finding is an I/O-bound
-operation.
+(Exact comparison does a lot of seeking, so it will be significantly slower
+on a traditional hard drive, but will probably be noticeably faster on a
+solid-state drive since it reads files incrementally and can stop as soon as
+a difference is encountered.)
 
-Grouping by size is used to limit both the memory consumption and the number of
-open file handles when doing the byte-by-byte comparison.
+Grouping by size and doing a preliminary pass to compare file headers are both
+used to significantly reduce the amount of comparison necessary. This also
+serves to limit both the memory consumption and the number of open file
+handles when doing exact comparisons.
 
 Finally, unlike with fdupes, under no circumstances will the --delete option
 allow you to accidentally delete every copy of a file. (No --symlinks option is
 supported and this script will not be confused by specifying the same directory
 multiple times on the command line or specifying a directory and its parent.)
 
+Note: This file has full Epydoc API documentation.
+
+--snip--
+
 @todo:
- - Decide what to do in the face of my discovery of https://github.com/sahib/rmlint
- - Rewrite this to put the grouping logic in a single groupByKey(paths, keymaker)
-   function.
- - As I understand it, fnmatch.fnmatch uses regexes internally and doesn't cache
-   them. Given how many times it gets called, I should try using re.compile with
-   fnmatch.translate instead.
+ - Decide what to do having discovered U{https://github.com/sahib/rmlint}
+ - Rewrite to put the grouping logic in a single C{groupByKey(paths, keymaker)}
+ - The result groups should be sorted by their first entry and the entries
+   within each group should be sorted too.
+ - As I understand it, C{fnmatch.fnmatch} uses regexes internally and doesn't
+   cache them. Given how many times it gets called, I should try using
+   C{re.compile} with C{fnmatch.translate} instead.
  - When in hash comparison mode, skip the second comparison for files small
    enough to be fully-compared by the header comparison.
  - Look into the performance effect of checking whether excludes contain
-   metacharacters and using simple string matching if they don't.
- - Group files by stat().st_ino to avoid reading from the same inode more than
-   once and to allow advanced handling of hardlinks in --delete mode.
-   - Offer a switch to automatically hardlink all duplicates found which share a
-     common partition.
- - Identify the ideal values for CHUNK_SIZE and HEAD_SIZE... or
+   meta-characters and using simple string matching if they don't.
+ - Group files by C{stat().st_ino} to avoid reading from the same inode more
+   than once and to allow advanced handling of hardlinks in C{--delete} mode.
+    - Offer a switch to automatically hardlink all duplicates found which share
+      a common partition.
+ - Identify the ideal values for L{CHUNK_SIZE} and L{HEAD_SIZE}... or
    how about dynamically tuning the read increment size based on the number of
    files being compared and possibly the available RAM? (To minimize seeking)
-   block_size = min(max_block_size, max_consumption / file_count)
-   Maybe a 64K maximum block size, 4K minimum block size,  an an 8MB max
-   consumption? (subordinate to minimum block size when in conflict)
-   - Is there such a thing as a disk access profiler that I could use with this?
- - The result groups should be sorted by their first entry and the entries within
-   each group should be sorted too.
- - Confirm that the byte-by-byte comparison's short-circuit evaluation is working
-   properly and efficiently.
+    - C{block_size = min(max_block_size, max_consumption / file_count)}
+    - Maybe a 64K maximum block size, 4K minimum block size, and an 8MB max
+      consumption? (subordinate to minimum block size when in conflict)
+    - Is there such a thing as a disk access profiler I could use with this?
+ - Confirm that the byte-by-byte comparison's short-circuit evaluation is
+   working properly and efficiently.
  - Run this through a memory profiler and look for obvious bloat to trim.
- - Look into possible solutions for pathological cases of thousands of files with
-   the same exact size and same pre-filter results. (File handle exhaustion)
- - Add a mode which caches hashes indexed by (path,size,mtime/ctime) so users can
-   trade away a bit of accuracy for a lot more speed.
+ - Look into possible solutions for pathological cases of thousands of files
+   with the same size and same pre-filter results. (File handle exhaustion)
+ - Add a mode which caches hashes indexed by C{(path,size,mtime/ctime)} so
+   users can trade away a bit of accuracy for a lot more speed.
  - Look into supporting gettext localization.
  - Support displaying duplicated directory trees as single results.
  - Once ready, announce this in a comment at
-   http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/
+   U{http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/}
+ - Add support for C{\\n} and C{\\x00}-separated stdin file lists.
+
+@todo: Look into C{schweikh3.c}::
+   <mauke> feature request: if you could make it output compatible with
+   http://www.ioccc.org/1998/schweikh3.hint , that would be sweet
+   (http://www.ioccc.org/1998/schweikh3.c)
+
+@todo: Look into C{samefile}::
+    <mauke> I don't like the way fdupes works. samefile's interface is superior
+    <mauke> it says if you specify a directory twice, it will list files as
+            their own duplicates.
+    <mauke> wtf was the author thinking?
+    <deitarion> mauke: Lazy, I guess. I believe I fixed that in fastdupes.
+
+@todo: Clean up string formatting::
+  <mauke> wow, a dynamic format string
+  <mauke> "%%%ds: %%s" confused me for a second there :-)
+  <mauke> doesn't python know about "%*d"?
+  <deitarion> Not sure. I've never heard of it.
+  <mauke> er, "%*s"
+  <deitarion> The dynamic format string is a trick I first picked up when doing
+              string substitution on optparse usage lines where you have to
+              escape %prog if you use it.
+  <mauke> well, in Perl I'd just do something like:
+              my $max = max(map length, keys %DEFAULTS);
+              ...
+              printf "%*s: %s\\n", $max, $key, $value;
+  <mauke> (or in C, but then I'd have to write my own max() and stuff)
+  <deitarion> Given that Google doesn't search punctuation, mind explaining
+              what %*s does?
+  <mauke> see http://perldoc.perl.org/functions/sprintf.html for details, but:
+  <mauke> you can use * instead of a hardcoded width (and .* instead of
+              precision)
+  <mauke> printf will then take an (integer) argument and substitute it
+  <mauke> so printf("%*s", 10, "foo") is equivalent to printf("%10s", "foo")
+  <deitarion> Hmm. It does support %*s. Another thing to make a TODO note for.
+  <mauke> this is more important in C because dynamically generated format
+              strings are much more painful there and the compiler can't check
+              your args anymore, but it's still nice to have
+  http://docs.python.org/library/stdtypes.html#string-formatting
+
+@newfield appname:Application Name
+
 """
 
-#TODO: <mauke> feature request: if you could make it output compatible with http://www.ioccc.org/1998/schweikh3.hint , that would be sweet (http://www.ioccc.org/1998/schweikh3.c)
-
-# TODO:
-# <mauke> I don't like the way fdupes works. samefile's interface is superior
-# <mauke> it says if you specify a directory twice, it will list files as their own duplicates
-# <mauke> wtf was the author thinking?
-# <deitarion> mauke: Lazy, I guess. I believe I fixed that in fastdupes.
-
-#TODO: Add support for \n and \x00-separated stdin file lists.
-
-#TODO: http://docs.python.org/library/stdtypes.html#string-formatting
-# <mauke> wow, a dynamic format string
-# <mauke> "%%%ds: %%s" confused me for a second there :-)
-# <mauke> doesn't python know about "%*d"?
-# <deitarion> Not sure. I've never heard of it.
-# <mauke> er, "%*s"
-# <deitarion> The dynamic format string is a trick I first picked up when doing string substitution on optparse usage lines where you have to escape %prog if you use it.
-# <mauke> well, in Perl I'd just do something like: my $max = max(map length, keys %DEFAULTS); ... printf "%*s: %s\n", $max, $key, $value;
-# <mauke> (or in C, but then I'd have to write my own max() and stuff)
-# <deitarion> Given that Google doesn't search punctuation, mind explaining what %*s does?
-# <mauke> see http://perldoc.perl.org/functions/sprintf.html for details, but:
-# <mauke> you can use * instead of a hardcoded width (and .* instead of precision)
-# <mauke> printf will then take an (integer) argument and substitute it
-# <mauke> so printf("%*s", 10, "foo") is equivalent to printf("%10s", "foo")
-# <deitarion> Hmm. It does support %*s. Another thing to make a TODO note for.
-# <mauke> this is more important in C because dynamically generated format strings are much more painful there and the compiler can't check your args anymore, but it's still nice to have
 
 __appname__ = "Find Dupes Fast"
 __author__  = "Stephan Sokolow (deitarion/SSokolow)"
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 __license__ = "GNU GPL 2.0 or later"
 
-import fnmatch, os, sets, stat, sys
+import fnmatch, os, stat, sys
 
-# Default settings
+try:
+    set() # Initializer shuts PyChecker up about unused
+except NameError:
+    from sets import Set as set # pylint: disable=W0622
+
+#: Default settings used by C{optparse} and some functions
 DEFAULTS = {
           'delete' : False,
          'exclude' : ['*/.svn', '*/.bzr'],
         'min_size' : 25, # Only check files this big or bigger.
 }
-CHUNK_SIZE = 65536 # Chunked file reads will operate on this many bytes at a time.
-HEAD_SIZE  = 65536 # Header comparison will compare this many bytes per file.
+CHUNK_SIZE = 65536 #: Size for chunked reads from file handles
+HEAD_SIZE  = 65536 #: Limit for how many bytes will be read to compare headers
 
-# According to the hard drive data sheets I examined, the average latency to
-# acquire a specific block (seek time, rotational latency, etc.) ranges from
-# roughly 14ms to 3ms. Assuming that the average uncached, seekless throughput
-# for a modern disk drive ranges from 60MB/s (as Google and hdparm seem to agree
-# on for 7200 RPM drives) and 73MB/s (lower bound for 15K RPM drives according
-# to manufacturer data sheets), then the point where read time overtakes seek time
-# in best-case scenarios for pseudo-parallel reads is at:
-# 73 * (3.0 / 1000) = 0.219
-# As such, 220K (round to a multiple of 4K) should be a good rule-of-thumb lower
-# bound for chunk sizes. (Actual chunk size must take available RAM into account
-# since, theoretically, a user may use this on a system with tons of dupes of a
-# single file)
+#: Theoretical ideal minimum chunk size
+#:
+#: According to the hard drive data sheets I examined, the average latency to
+#: acquire a specific block (seek time, rotational latency, etc.) ranges from
+#: roughly 14ms to 3ms.
+#:
+#: Assuming that the average uncached, seekless throughput
+#: for a modern disk drive ranges from 60MB/s (as Google and C{hdparm} seem to
+#: agree on for 7200 RPM drives) and 73MB/s (lower bound for 15K RPM drives
+#: according to manufacturer data sheets), then the point where read time
+#: overtakes seek time in best-case scenarios for pseudo-parallel reads is at::
+#:  73 * (3.0 / 1000) = 0.219
+#:
+#: As such, 220KiB (round to a multiple of 4KiB) should be a good rule-of-thumb
+#: lower bound for chunk sizes. (Actual chunk size must take available RAM into
+#: account since, theoretically, a user may use this on a system with tons of
+#: dupes of a single file)
+#:
+#: @todo: Actually use this value.
+#: @todo: Gather statistical information on the characteristics of
+#: commonly-duplicated files to further tune this.
+IDEAL_MIN_CHUNK_SIZE = 220 * 1024
 
-IDEAL_MIN_CHUNK_SIZE = 220 * 1024 #TODO: Actually use this value.
-#TODO: Gather statistical information on the characteristics of
-# commonly-duplicated files to further tune this.
+#{ General Helper Functions
 
-# We need os.lstat so we can skip symlinks, but we want Windows portability too.
-try: _stat = os.lstat
-except: _stat = os.stat
+# We need os.lstat so we can skip symlinks, but we want Windows portability too
+try:
+    _stat = os.lstat
+except AttributeError:
+    _stat = os.stat
 
 # Note: In my `python -m timeit` tests, the difference between MD5 and SHA1 was
 # negligible, so there is no meaningful reason not to take advantage of the
-# reduced potential for hash collisions SHA-1's greater hash size offers.
+# reduced potential for hash collisions SHA1's greater hash size offers.
 try:
     import hashlib
-    hasher = hashlib.sha1
-except:
+    hasher = hashlib.sha1 # pylint: disable=E1101
+except (ImportError, AttributeError):
     # Backwards-compatibility for pre-2.5 Python.
     import sha
     hasher = sha.new
 
-def getPaths(roots, ignores=DEFAULTS['exclude'], min_size=DEFAULTS['min_size']):
-    """
-    Given a list of directories, walk them and return a list of absolute paths.
+def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
+    """Generate an SHA1 hash for a potentially long file.
+    Digesting will obey L{CHUNK_SIZE} to conserve memory.
 
-    Ignores files matched by ignore patterns.
-    Doesn't descend into directories matched by ignore patterns.
+    @param handle: A file-like object or path to hash from.
+    @param want_hex: If true, the returned hash will be hex-encoded.
+    @param limit: The maximum number of bytes to read (will be rounded up to
+        a multiple of C{CHUNK_SIZE})
+    @param chunk_size: Size of C{read()} operations in bytes.
+
+    @type want_hex: C{bool}
+    @type limit: C{int}
+    @type chunk_size: C{int}
+
+    @rtype: C{str}
+    @returns: A binary or hex-encoded SHA1 hash.
+
+    @note: It is your responsibility to close any file-like objects you pass in.
+    """
+    fhash, read = hasher(), 0
+    if isinstance(handle, basestring):
+        handle = file(handle, 'rb')
+
+    # Chunked digest generation (conserve memory)
+    for block in iter(lambda: handle.read(chunk_size), ''):
+        fhash.update(block)
+        read += chunk_size
+        if 0 < limit <= read:
+            break
+
+    return want_hex and fhash.hexdigest() or fhash.digest()
+
+#}
+#{ Processing Pipeline
+
+def getPaths(roots, ignores=DEFAULTS['exclude']):
+    """
+    Convert a list of paths containing directories into a list of absolute file
+    paths.
+
+    @param roots: Files and folders to walk.
+    @param ignores: A list of C{fnmatch.fnmatch} patterns to avoid walking and
+        omit from results.
+
+    @returns: List of paths containing only files.
+    @rtype: C{list}
 
     @todo: Try to optimize the ignores matching. Running a regex on every
     filename is a fairly significant percentage of the time taken according to
@@ -177,7 +251,8 @@ def getPaths(roots, ignores=DEFAULTS['exclude'], min_size=DEFAULTS['min_size']):
             continue
 
         for fldr in os.walk(root):
-            sys.stderr.write("\rGathering file paths to compare... (%d files examined)" % count)
+            msg = "\rGathering file paths to compare... (%d files examined)"
+            sys.stderr.write(msg % count)
 
             # Don't even descend into IGNOREd directories.
             for subdir in fldr[1]:
@@ -187,29 +262,39 @@ def getPaths(roots, ignores=DEFAULTS['exclude'], min_size=DEFAULTS['min_size']):
 
             for filename in fldr[2]:
                 filepath = os.path.join(fldr[0], filename)
-                if [x for x in ignores if fnmatch.fnmatch(filepath,x)]:
+                if [x for x in ignores if fnmatch.fnmatch(filepath, x)]:
                     continue # Skip IGNOREd files.
 
                 paths.append(filepath)
                 count += 1
 
-    sys.stderr.write("\rFound %s files to be compared for duplication.      \n" % (len(paths), count))
+    msg = "\rFound %s files to be compared for duplication.             \n"
+    sys.stderr.write(msg % (len(paths)))
     return paths
 
 
-def groupBySize(paths, min_size=DEFAULTS['min_size']):
-    """
-    Given a list of paths, return a dict of lists where the keys are filesizes
-    and the values are lists of files with those sizes.
-
+def groupBySize(paths, min_size=DEFAULTS['min_size'], uniques=False):
+    """Group a list of paths by their file sizes.
     Ignores symlinks.
+
+    @param paths: File paths to group by size.
+    @param min_size: Files smaller than this size (in bytes) will be ignored.
+    @param uniques: If false, discard groups with only one member.
+
+    @type paths: iterable
+    @type min_size: C{int}
+    @type uniques: C{bool}
+
+    @returns: A dict mapping sizes to lists of paths.
+    @rtype: C{dict}
 
     @todo: Rework the calling of stat() to minimize the number of calls. It's a
     fairly significant percentage of the time taken according to the profiler.
     """
-    filesBySize, count = {}, 0
+    bySize, count = {}, 0
     for path in paths:
-        sys.stderr.write("\rFinding files with identical sizes... (%d files examined)" % count)
+        msg = "\rFinding files with identical sizes... (%d files examined)"
+        sys.stderr.write(msg % count)
 
         # If this is gonna run on every single file, let's make it only do
         # a single lstat() call outside os.walk().
@@ -218,111 +303,109 @@ def groupBySize(paths, min_size=DEFAULTS['min_size']):
             continue # Skip symlinks.
 
         if filestat.st_size >= min_size:
-            if not filestat.st_size in filesBySize:
-                # Use sets.Set() to avoid accidentally counting a given path twice.
-                # (Reinforces the use of os.path.realpath in getPaths for safety)
-                filesBySize[filestat.st_size] = sets.Set()
-            filesBySize[filestat.st_size].add(path)
+            if not filestat.st_size in bySize:
+                # Use set() to avoid accidentally counting a given path twice.
+                # (Reinforces use of os.path.realpath in getPaths for safety)
+                bySize[filestat.st_size] = set()
+            bySize[filestat.st_size].add(path)
             count += 1
 
-    # Return only the sizes with more than one file.
-    filesBySize = dict([(x, filesBySize[x]) for x in filesBySize if len(filesBySize[x]) > 1])
-    sys.stderr.write("\rFound %s sets of files with identical sizes. (%d files examined)          \n" % (len(filesBySize), count))
-    return filesBySize
+    if not uniques:
+        # Return only the sizes with more than one file.
+        bySize = dict([(x, bySize[x]) for x in bySize if len(bySize[x]) > 1])
 
-def subgroupByHeaders(fileGroups, head_size=HEAD_SIZE):
-    """Given a dict mapping file sizes (or anything, really) to iterables of
-    paths, use hash comparison of the first head_size bytes to re-group them and
-    eliminate files that are obviously not duplicates.
+    sys.stderr.write("\rFound %s sets of files with identical sizes. "
+                     "(%d files examined)          \n" % (len(bySize), count))
+    return bySize
+
+def subgroupByHashes(fileGroups, limit=HEAD_SIZE, uniques=False):
+    """Further subdivide a list of file groups by hash equality.
 
     This serves one of two purposes depending on run-mode:
-    - Minimize the number of files checked by full-content hashing
-    - Minimize the chances of file handle exhaustion and limit seeking when
-      doing exact comparisons.
+     - Minimize the number of files checked by full-content comparison (hash)
+     - Minimize the chances of file handle exhaustion and limit seeking (exact)
 
-    Returns a dict mapping head hashes to Set()s of paths.
+    @param fileGroups: Any dict with lists of files for keys.
+    @param limit: Maximum number of bytes to read from each file.
+        Values which evaluate boolean False indicate no limit.
+    @param uniques: If false, discard groups with only one member.
+
+    @type fileGroups: C{dict}
+    @type limit: C{int}
+    @type uniques: C{bool}
+
+    @returns: A dict mapping hashes to C{set()}s of paths.
+    @rtype: C{dict}
     """
-    groupsByHead, count, total = {}, 0, len(fileGroups)
+    byHash, count, total = {}, 0, len(fileGroups)
     for key in fileGroups:
-        sys.stderr.write("\rFinding files with identical heads... %d of %d sets examined" % (count, total))
+        msg = "\rFinding files with identical heads... %d of %d sets examined"
+        sys.stderr.write(msg % (count, total))
         for path in fileGroups[key]:
-            headHash = hasher(file(path,'rb').read(head_size)).digest()
-            if not headHash in groupsByHead:
-                groupsByHead[headHash] = sets.Set()
-            groupsByHead[headHash].add(path)
+            headHash = hashFile(path, limit)
+            if not headHash in byHash:
+                byHash[headHash] = set()
+            byHash[headHash].add(path)
         count += 1
 
-    groupsByHead = dict([(x, groupsByHead[x]) for x in groupsByHead if len(groupsByHead[x]) > 1])
-    sys.stderr.write("\rFound %s sets of files with identical heads. (%d sets examined)\n" % (len(groupsByHead), count))
-    return groupsByHead
+    if not uniques:
+        byHash = dict([(x, byHash[x]) for x in byHash if len(byHash[x]) > 1])
 
-def hashFile(handle, want_hex=False):
-    """Generate an SHA1 hash for a potentially long file.
-    Accepts paths and file-like objects.
+    msg = limit and "heads" or "hashes"
+    sys.stderr.write("\rFound %s sets of files with equal %s. (%d sets checked"
+                     ")          \n" % (len(byHash), msg, count))
+    return byHash
 
-    If passed a file-like object, digesting will obey CHUNK_SIZE to conserve
-    memory.
-
-    If you pass in a file-like object, it is your responsibility to close it.
-    """
-    if isinstance(handle, basestring):
-        handle = file(handle, 'rb')
-    fhash = hasher()
-
-    # Chunked digest generation (conserve memory)
-    for block in iter(lambda: handle.read(CHUNK_SIZE), ''):
-        fhash.update(block)
-
-    return want_hex and fhash.hexdigest() or fhash.digest()
-
-def subgroupByHashes(fileGroups):
-    """
-    Given a dict from a function like subGroupByHeaders, return a list of lists
-    with each sublist representing a group of duplicate files.
-
-    Reads and hashes files block-by-block, but reads files serially to minimize
-    seeking. As with all hash comparison, there is an extremely remote
-    possibility of hash collision causing false positives.
-    """
-    dupeGroups, processed = [], 0
-    for key in fileGroups:
-        sys.stderr.write("\rScanning for real duplicates... %s of %s sets processed" % (processed, len(fileGroups)))
-        raise NotImplementedError("TODO: Finish implementing this")
-        #dupeGroups.extend(compareFiles(fileGroups[key]))
-        #processed += 1
-
-    results = [x for x in dupeGroups if len(x) > 1]
-    sys.stderr.write("\rFound %s sets of duplicate files. (processed %s potential sets)\n" % (len(results), len(fileGroups)))
-    return results
-
-def subgroupByContents(fileGroups):
-    """
-    Given a dict from a function like subGroupByHeaders, return a list of lists
-    with each sublist representing a group of duplicate files.
+def subgroupByContents(fileGroups, uniques=False):
+    """Further subdivide a list of file groups by content equality.
 
     Compares block-by-block using parallel reads. Lacks the remote potential of
     hash collisions present with hash comparison... but is heavy on disk seeks.
+
+    See L{compareFiles} for more details.
+
+    @param fileGroups: Any dict with lists of files for keys.
+    @param uniques: If false, discard groups with only one member.
+
+    @type fileGroups: C{dict}
+    @type uniques: C{bool}
+
+    @returns: A list of lists containing identical files.
+    @rtype: C{list}
+    """
+    """
+
     """
     dupeGroups, processed = [], 0
-    for key in fileGroups:
-        sys.stderr.write("\rScanning for real duplicates... %s of %s sets processed" % (processed, len(fileGroups)))
+    for group in fileGroups.values():
+        msg = "\rScanning for real duplicates... %s of %s sets processed"
+        sys.stderr.write(msg % (processed, len(fileGroups)))
         # By doing it this way, I minimize the number of file handles open at
         # any given time. (group by group)
-        dupeGroups.extend(compareFiles(fileGroups[key]))
+        dupeGroups.extend(compareFiles(group))
         processed += 1
 
-    results = [x for x in dupeGroups if len(x) > 1]
-    sys.stderr.write("\rFound %s sets of duplicate files. (processed %s potential sets)\n" % (len(results), len(fileGroups)))
+    if not uniques:
+        results = [x for x in dupeGroups if len(x) > 1]
+
+    msg = "\rFound %s sets of duplicate files. (processed %s potential sets)\n"
+    sys.stderr.write(msg % (len(results), len(fileGroups)))
     return results
 
 def compareFiles(paths):
-    """
-    Do a byte-by-byte comparison of an arbitrary number of files without
-    doing any more disk I/O than a regular SHA1 or MD5 hash comparison would
-    take. (Does do a lot of seeking though. Best for SSD-based storage)
+    """Byte-for-byte comparison on an arbitrary number of files in parallel.
 
-    Takes a list of paths as input and returns a list of lists of paths as
-    output.
+    This operates by opening all files in parallel and comparing
+    chunk-by-chunk. This has the following implications:
+        - Reads the same total amount of data as hash comparison.
+        - Performs a I{lot} of disk seeks. (Best suited for SSDs)
+        - Vulnerable to file handle exhaustion if used on its own.
+
+    @param paths: List of potentially identical files.
+    @type paths: iterable
+
+    @returns: List of lists containing identical files.
+    @rtype: C{list}
     """
     handles, results = [], []
 
@@ -350,18 +433,24 @@ def compareFiles(paths):
     return results
 
 def compareChunks(handles, chunkSize=CHUNK_SIZE):
-    """
-    Given a list of (path, handle, "") tuples, read a chunk from each handle,
-    compare them, and return two sets of lists:
-    - One containing more lists to be fed back into this function individually.
-    - One containing finished groups of duplicate paths. (includes unique files
-      as single-file lists)
+    """Group a list of file handles based on equality of the next chunk of
+    data read from them.
 
-    File handles will be automatically closed when they're no longer necessary.
+    @param handles: A list of open handles for file-like objects with
+        potentially-identical contents.
+    @param chunkSize: The amount of data to read from each handle every time
+        this function is called.
 
+    @returns: Two lists of lists:
+     - One containing more lists to be fed back into this function individually
+     - One containing finished groups of duplicate paths. (includes unique
+       files as single-file lists)
+    @rtype: C{(list, list)}
+
+    @attention: File handles will be automatically-closed when no longer needed.
     @todo: Discard the chunk contents immediately once they're no longer needed.
     """
-    chunks = [(path, fh, fh.read(chunkSize)) for path, fh, data in handles]
+    chunks = [(path, fh, fh.read(chunkSize)) for path, fh, _ in handles]
     more, done = [], []
 
     # While there are combinations not yet tried...
@@ -384,18 +473,28 @@ def compareChunks(handles, chunkSize=CHUNK_SIZE):
 
     return more, done
 
-def pruneUI(dupeList, mainPos, mainLen):
-    """Prompt the user for which files they want to keep (impossible to choose
-    "none of them") using a number-driven console menu and then return a list
-    of filenames to be deleted.
+#}
+#{ User Interface
+
+def pruneUI(dupeList, mainPos=1, mainLen=1):
+    """Display a list of files and prompt for ones to be kept.
 
     The user may enter "all" or one or more numbers separated by spaces and/or
     commas.
 
-    Arguments:
-    - dupeList (a list of paths to duplicate files)
-    - mainPos (Used to display "set X of Y")
-    - mainLen (Used to display "set X of Y")"""
+    @note: It is impossible to accidentally choose to keep none of the
+        displayed files.
+
+    @param dupeList: A list duplicate file paths
+    @param mainPos: Used to display "set X of Y"
+    @param mainLen: Used to display "set X of Y"
+    @type dupeList: C{list}
+    @type mainPos: C{int}
+    @type mainLen: C{int}
+
+    @returns: A list of files to be deleted.
+    @rtype: C{list}
+    """
     dupeList = sorted(dupeList)
     print
     for pos, val in enumerate(dupeList):
@@ -408,10 +507,13 @@ def pruneUI(dupeList, mainPos, mainLen):
         elif choice.lower() == 'all':
             return []
         try:
-            result = [int(x)-1 for x in choice.replace(',',' ').split()]
-            return [path for pos, path in enumerate(dupeList) if not pos in result]
-        except:
-            print "Invalid choice. Please enter a space/comma-separated list of numbers or 'all'."
+            out = [int(x)-1 for x in choice.replace(',',' ').split()]
+            return [val for pos, val in enumerate(dupeList) if not pos in out]
+        except ValueError:
+            print("Invalid choice. Please enter a space/comma-separated list"
+                  "of numbers or 'all'.")
+
+#}
 
 if __name__ == '__main__':
     from optparse import OptionParser
@@ -425,21 +527,21 @@ if __name__ == '__main__':
     parser.add_option('-E', '--exact', action="store_true", dest="exact",
         default=False, help="There is a vanishingly small chance of false"
         " positives when comparing files using sizes and hashes. This option"
-        " enables exact comparison. However, exact comparison requires a lot of"
-        " disk seeks, so, on traditional moving-platter media, this trades a"
-        " LOT of performance for a very tiny amount of safety most people don't"
-        " need.")
+        " enables exact comparison. However, exact comparison requires a lot"
+        " of disk seeks, so, on traditional moving-platter media, this trades"
+        " a LOT of performance for a very tiny amount of safety most people"
+        " don't need.")
     parser.add_option('-e', '--exclude', action="append", dest="exclude",
         metavar="PAT", help="Specify a globbing pattern to be"
         " added to the internal blacklist. This option can be used multiple"
         " times. Provide a dash (-) as your first exclude to override the"
         " pre-programmed defaults.")
-    parser.add_option('--min-size', action="store", type="int", dest="min_size",
-        metavar="X", help="Specify a non-default minimum size"
+    parser.add_option('--min-size', action="store", type="int",
+        dest="min_size", metavar="X", help="Specify a non-default minimum size"
         ". Files below this size (default: %s bytes) will be ignored."
         "" % DEFAULTS['min_size'])
     #XXX: Should I add --verbose and/or --quiet?
-    parser.set_defaults(**DEFAULTS)
+    parser.set_defaults(**DEFAULTS) # pylint: disable=W0142
 
     opts, args = parser.parse_args()
 
@@ -452,19 +554,19 @@ if __name__ == '__main__':
         formatStr = "%%%ds: %%s" % max([len(x) for x in DEFAULTS])
         for key in DEFAULTS:
             value = DEFAULTS[key]
-            if isinstance(value, (list, sets.Set)):
+            if isinstance(value, (list, set)):
                 value = ', '.join(value)
             print formatStr % (key, value)
         sys.exit()
 
     groups = getPaths(args, opts.exclude)
     groups = groupBySize(groups, opts.min_size)
-    groups = subgroupByHeaders(groups)
+    groups = subgroupByHashes(groups, limit=HEAD_SIZE)
 
     if opts.exact:
         groups = subgroupByContents(groups)
     else:
-        groups = subgroupByHashes(groups)
+        groups = subgroupByHashes(groups).values()
 
     if opts.delete:
         for pos, val in enumerate(groups):
