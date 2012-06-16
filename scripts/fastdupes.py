@@ -273,90 +273,83 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
     sys.stderr.write(msg % (len(paths)))
     return paths
 
+def groupBy(groups_in, function, fun_desc='?', uniques=False, *args, **kwargs):
+    """Subdivide groups of paths according to a function.
 
-def groupBySize(paths, min_size=DEFAULTS['min_size'], uniques=False):
-    """Group a list of paths by their file sizes.
-    Ignores symlinks.
-
-    @param paths: File paths to group by size.
-    @param min_size: Files smaller than this size (in bytes) will be ignored.
+    @param groups_in: Groups of path lists.
+    @param function: Function which takes a string and list of groups and
+        inserts it into an appropriate group.
+    @param fun_desc: Human-readable term for what paths are being grouped
+        by for use in log messages.
     @param uniques: If false, discard groups with only one member.
 
-    @type paths: iterable
-    @type min_size: C{int}
+    @type paths: C{dict} of iterables
+    @type function: C{function(str, dict)}
+    @type fun_desc: C{str}
     @type uniques: C{bool}
 
     @returns: A dict mapping sizes to lists of paths.
     @rtype: C{dict}
 
-    @todo: Rework the calling of stat() to minimize the number of calls. It's a
-    fairly significant percentage of the time taken according to the profiler.
+    @attention: Grouping functions generally use a C{set} for C{groups} as
+        extra protection against accidentally counting a given file twice.
+        (Complimentary to C{os.path.realpath()} in L{getPaths})
     """
-    bySize, count = {}, 0
-    for path in paths:
-        msg = "\rFinding files with identical sizes... (%d files examined)"
-        sys.stderr.write(msg % count)
+    groups, count, group_count = {}, 0, len(groups_in)
+    for pos, paths in enumerate(groups_in.values()):
+        for path in paths:
+            msg = "\rSubdividing group %d of %d by %s... (%d files examined)"
+            sys.stderr.write(msg % (pos+1, group_count, fun_desc, count))
 
-        # If this is gonna run on every single file, let's make it only do
-        # a single lstat() call outside os.walk().
-        filestat = _stat(path)
-        if stat.S_ISLNK(filestat.st_mode):
-            continue # Skip symlinks.
-
-        if filestat.st_size >= min_size:
-            if not filestat.st_size in bySize:
-                # Use set() to avoid accidentally counting a given path twice.
-                # (Reinforces use of os.path.realpath in getPaths for safety)
-                bySize[filestat.st_size] = set()
-            bySize[filestat.st_size].add(path)
+            function(path, groups, *args, **kwargs)
             count += 1
 
     if not uniques:
-        # Return only the sizes with more than one file.
-        bySize = dict([(x, bySize[x]) for x in bySize if len(bySize[x]) > 1])
+        # Return only the groups with more than one file.
+        groups = dict([(x, groups[x]) for x in groups if len(groups[x]) > 1])
 
-    sys.stderr.write("\rFound %s sets of files with identical sizes. "
-                     "(%d files examined)          \n" % (len(bySize), count))
-    return bySize
+    sys.stderr.write("\rFound %s sets of files with identical %s. "
+        "(%d files examined)         \n" % (len(groups), fun_desc, count))
+    return groups
 
-def subgroupByHashes(fileGroups, limit=HEAD_SIZE, uniques=False):
-    """Further subdivide a list of file groups by hash equality.
+def sizeGrouper(path, groups, min_size=DEFAULTS['min_size']):
+    """Sort a file into a group based on on-disk size.
 
-    This serves one of two purposes depending on run-mode:
-     - Minimize the number of files checked by full-content comparison (hash)
-     - Minimize the chances of file handle exhaustion and limit seeking (exact)
+    @param path: The path to the file to group.
+    @param groups: A dict mapping sizes to C{set()}s.
+    @param min_size: Files smaller than this size (in bytes) will be ignored.
 
-    @param fileGroups: Any dict with lists of files for keys.
-    @param limit: Maximum number of bytes to read from each file.
-        Values which evaluate boolean False indicate no limit.
-    @param uniques: If false, discard groups with only one member.
+    @type path: C{str}
+    @type groups: C{dict}
+    @type min_size: C{int}
 
-    @type fileGroups: C{dict}
-    @type limit: C{int}
-    @type uniques: C{bool}
-
-    @returns: A dict mapping hashes to C{set()}s of paths.
-    @rtype: C{dict}
+    @todo: Rework the calling of stat() to minimize the number of calls. It's a
+    fairly significant percentage of the time taken according to the profiler.
     """
-    byHash, count, total = {}, 0, len(fileGroups)
-    for key in fileGroups:
-        msg = "\rFinding files with identical heads... %d of %d sets examined"
-        sys.stderr.write(msg % (count, total))
-        for path in fileGroups[key]:
-            headHash = hashFile(path, limit)
-            if not headHash in byHash:
-                byHash[headHash] = set()
-            byHash[headHash].add(path)
-        count += 1
+    filestat = _stat(path)
+    if stat.S_ISLNK(filestat.st_mode):
+        return # Skip symlinks.
 
-    if not uniques:
-        byHash = dict([(x, byHash[x]) for x in byHash if len(byHash[x]) > 1])
+    if filestat.st_size >= min_size:
+        groups.setdefault(filestat.st_size, set()).add(path)
 
-    msg = limit and "heads" or "hashes"
-    sys.stderr.write("\rFound %s sets of files with equal %s. (%d sets checked"
-                     ")          \n" % (len(byHash), msg, count))
-    return byHash
+def hashGrouper(path, groups, limit=HEAD_SIZE):
+    """Sort a file into a group based on its SHA1 hash.
 
+    @param path: The path to the file to group.
+    @param groups: A dict mapping hashes to C{set()}s.
+    @param limit: Only this many bytes will be counted in the hash.
+        Values which evaluate boolean False indicate no limit.
+
+    @type path: C{str}
+    @type groups: C{dict}
+    @type limit: C{int}
+
+    """
+    headHash = hashFile(path, limit)
+    groups.setdefault(headHash, set()).add(path)
+
+#TODO: Rework groupBy and subgroupByContents to unify them.
 def subgroupByContents(fileGroups, uniques=False):
     """Further subdivide a list of file groups by content equality.
 
@@ -391,7 +384,9 @@ def subgroupByContents(fileGroups, uniques=False):
 
     msg = "\rFound %s sets of duplicate files. (processed %s potential sets)\n"
     sys.stderr.write(msg % (len(results), len(fileGroups)))
-    return results
+
+    # Keep the same API as the others.
+    return {x:y for x,y in enumerate(results)}
 
 def compareFiles(paths):
     """Byte-for-byte comparison on an arbitrary number of files in parallel.
@@ -407,6 +402,11 @@ def compareFiles(paths):
 
     @returns: List of lists containing identical files.
     @rtype: C{list}
+
+    @todo: Start examining the C{while handles:} block to figure out how to
+        minimize thrashing in situations where read-ahead caching is active.
+        Compare savings by read-ahead to savings due to eliminating false
+        positives as quickly as possible. This is a 2-variable min/max problem.
     """
     handles, results = [], []
 
@@ -419,13 +419,8 @@ def compareFiles(paths):
             pass #TODO: Verbose-mode output here.
     handles.append(hList)
 
-    # While there are handles that are neither EOFed nor known to be unique...
     while handles:
         # Process more blocks.
-        #FIXME: Start examining this to figure out how to minimize thrashing in
-        #       situations where read-ahead caching is active. Compare savings
-        #       by read-ahead to savings due to eliminating false positives as
-        #       quickly as possible. This is a 2-variable min/max problem.
         more, done = compareChunks(handles.pop(0))
 
         # Add the results to the top-level lists.
@@ -560,14 +555,18 @@ if __name__ == '__main__':
             print formatStr % (key, value)
         sys.exit()
 
-    groups = getPaths(args, opts.exclude)
-    groups = groupBySize(groups, opts.min_size)
-    groups = subgroupByHashes(groups, limit=HEAD_SIZE)
+    groups = {'': getPaths(args, opts.exclude)}
+    groups = groupBy(groups, sizeGrouper, 'sizes', min_size=opts.min_size)
+
+    # This serves one of two purposes depending on run-mode:
+    # - Minimize the number of files checked by full-content comparison (hash)
+    # - Minimize the chances of file handle exhaustion and limit seeking (exact)
+    groups = groupBy(groups, hashGrouper, 'header hashes', limit=HEAD_SIZE)
 
     if opts.exact:
         groups = subgroupByContents(groups)
     else:
-        groups = subgroupByHashes(groups).values()
+        groups = groupBy(groups, hashGrouper, 'hashes')
 
     if opts.delete:
         for pos, val in enumerate(groups):
@@ -576,7 +575,7 @@ if __name__ == '__main__':
             for path in pruneList:
                 os.remove(path)
     else:
-        for dupeSet in groups:
+        for dupeSet in groups.values():
             for filename in dupeSet:
                 print filename
             print
