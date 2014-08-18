@@ -198,6 +198,32 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
 
     return want_hex and fhash.hexdigest() or fhash.digest()
 
+class OverWriter(object):
+    """Output helper for handling overdrawing the previous line cleanly."""
+    def __init__(self, fobj):
+        self.max_len = 0
+        self.fobj = fobj
+
+        self.isatty = False
+        if hasattr(self.fobj, 'fileno'):
+            self.isatty = os.isatty(self.fobj.fileno())
+
+    def write(self, text, newline=False):
+        if not self.isatty:
+            self.fobj.write('%s\n' % text)
+            return
+
+        msg_len = len(text)
+        self.max_len = max(self.max_len, msg_len)
+
+        self.fobj.write("\r%-*s" % (self.max_len, text))
+        if newline or not self.isatty:
+            self.fobj.write('\n')
+            self.max_len = 0
+
+
+out = OverWriter(sys.stderr)
+
 #}
 #{ Processing Pipeline
 
@@ -241,8 +267,8 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
             continue
 
         for fldr in os.walk(root):
-            msg = "\rGathering file paths to compare... (%d files examined)"
-            sys.stderr.write(msg % count)
+            out.write("Gathering file paths to compare... (%d files examined)"
+                      % count)
 
             # Don't even descend into IGNOREd directories.
             for subdir in fldr[1]:
@@ -258,8 +284,8 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
                 paths.append(filepath)
                 count += 1
 
-    msg = "\rFound %s files to be compared for duplication.             \n"
-    sys.stderr.write(msg % (len(paths)))
+    out.write("Found %s files to be compared for duplication." % (len(paths)),
+              newline=True)
     return paths
 
 def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
@@ -288,8 +314,10 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
     """
     groups, count, group_count = {}, 0, len(groups_in)
     for pos, paths in enumerate(groups_in.values()):
-        msg = "\rSubdividing group %d of %d by %s... (%d files examined)"
-        sys.stderr.write(msg % (pos + 1, group_count, fun_desc, count))
+        out.write("Subdividing group %d of %d by %s... (%d files examined, %d "
+                  "in current group)" % (
+                      pos + 1, group_count, fun_desc, count, len(paths)
+                  ))
 
         # TODO: Find some way to bring back the file-by-file status text
         for key, group in classifier(paths, *args, **kwargs).items():
@@ -300,8 +328,8 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
         # Return only the groups with more than one file.
         groups = dict([(x, groups[x]) for x in groups if len(groups[x]) > 1])
 
-    sys.stderr.write("\rFound %s sets of files with identical %s. "
-        "(%d files examined)         \n" % (len(groups), fun_desc, count))
+    out.write("Found %s sets of files with identical %s. (%d files examined)"
+              % (len(groups), fun_desc, count), newline=True)
     return groups
 
 def groupify(function):
