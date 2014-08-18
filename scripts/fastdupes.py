@@ -189,6 +189,9 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     if isinstance(handle, basestring):
         handle = file(handle, 'rb')
 
+    if limit:
+        chunk_size = min(chunk_size, limit)
+
     # Chunked digest generation (conserve memory)
     for block in iter(lambda: handle.read(chunk_size), ''):
         fhash.update(block)
