@@ -288,7 +288,8 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
     sys.stderr.write(msg % (len(paths)))
     return paths
 
-def groupBy(groups_in, function, fun_desc='?', uniques=False, *args, **kwargs):
+def groupBy(groups_in, function, fun_desc='?', keep_uniques=False,
+            *args, **kwargs):
     """Subdivide groups of paths according to a function.
 
     @param groups_in: Groups of path lists.
@@ -296,12 +297,12 @@ def groupBy(groups_in, function, fun_desc='?', uniques=False, *args, **kwargs):
         inserts it into an appropriate group.
     @param fun_desc: Human-readable term for what paths are being grouped
         by for use in log messages.
-    @param uniques: If false, discard groups with only one member.
+    @param keep_uniques: If false, discard groups with only one member.
 
     @type paths: C{dict} of iterables
     @type function: C{function(str, dict)}
     @type fun_desc: C{str}
-    @type uniques: C{bool}
+    @type keep_uniques: C{bool}
 
     @returns: A dict mapping sizes to lists of paths.
     @rtype: C{dict}
@@ -319,7 +320,7 @@ def groupBy(groups_in, function, fun_desc='?', uniques=False, *args, **kwargs):
             function(path, groups, *args, **kwargs)
             count += 1
 
-    if not uniques:
+    if not keep_uniques:
         # Return only the groups with more than one file.
         groups = dict([(x, groups[x]) for x in groups if len(groups[x]) > 1])
 
