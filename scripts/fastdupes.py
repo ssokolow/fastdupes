@@ -288,19 +288,19 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
     sys.stderr.write(msg % (len(paths)))
     return paths
 
-def groupBy(groups_in, function, fun_desc='?', keep_uniques=False,
+def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
             *args, **kwargs):
     """Subdivide groups of paths according to a function.
 
     @param groups_in: Groups of path lists.
-    @param function: Function which takes a string and list of groups and
+    @param classifier: Function which takes a string and list of groups and
         inserts it into an appropriate group.
     @param fun_desc: Human-readable term for what paths are being grouped
         by for use in log messages.
     @param keep_uniques: If false, discard groups with only one member.
 
     @type paths: C{dict} of iterables
-    @type function: C{function(str, dict)}
+    @type classifier: C{function(str, dict)}
     @type fun_desc: C{str}
     @type keep_uniques: C{bool}
 
@@ -317,7 +317,7 @@ def groupBy(groups_in, function, fun_desc='?', keep_uniques=False,
             msg = "\rSubdividing group %d of %d by %s... (%d files examined)"
             sys.stderr.write(msg % (pos+1, group_count, fun_desc, count))
 
-            function(path, groups, *args, **kwargs)
+            classifier(path, groups, *args, **kwargs)
             count += 1
 
     if not keep_uniques:
@@ -328,7 +328,7 @@ def groupBy(groups_in, function, fun_desc='?', keep_uniques=False,
         "(%d files examined)         \n" % (len(groups), fun_desc, count))
     return groups
 
-def sizeGrouper(path, groups, min_size=DEFAULTS['min_size']):
+def sizeClassifier(path, groups, min_size=DEFAULTS['min_size']):
     """Sort a file into a group based on on-disk size.
 
     @param path: The path to the file to group.
@@ -349,7 +349,7 @@ def sizeGrouper(path, groups, min_size=DEFAULTS['min_size']):
     if filestat.st_size >= min_size:
         groups.setdefault(filestat.st_size, set()).add(path)
 
-def hashGrouper(path, groups, limit=HEAD_SIZE):
+def hashClassifier(path, groups, limit=HEAD_SIZE):
     """Sort a file into a group based on its SHA1 hash.
 
     @param path: The path to the file to group.
@@ -572,17 +572,17 @@ if __name__ == '__main__':
         sys.exit()
 
     groups = {'': getPaths(args, opts.exclude)}
-    groups = groupBy(groups, sizeGrouper, 'sizes', min_size=opts.min_size)
+    groups = groupBy(groups, sizeClassifier, 'sizes', min_size=opts.min_size)
 
     # This serves one of two purposes depending on run-mode:
     # - Minimize the number of files checked by full-content comparison (hash)
     # - Minimize the chances of file handle exhaustion and limit seeking (exact)
-    groups = groupBy(groups, hashGrouper, 'header hashes', limit=HEAD_SIZE)
+    groups = groupBy(groups, hashClassifier, 'header hashes', limit=HEAD_SIZE)
 
     if opts.exact:
         groups = subgroupByContents(groups)
     else:
-        groups = groupBy(groups, hashGrouper, 'hashes')
+        groups = groupBy(groups, hashClassifier, fun_desc='hashes')
 
     if opts.delete:
         for pos, val in enumerate(groups):
