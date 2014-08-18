@@ -48,6 +48,9 @@ Note: This file has full Epydoc API documentation.
  - As I understand it, C{fnmatch.fnmatch} uses regexes internally and doesn't
    cache them. Given how many times it gets called, I should try using
    C{re.compile} with C{fnmatch.translate} instead.
+   - I should also look into what the performance effect are of
+     programmatically combining multiple C{fnmatch.translate} outputs so
+     the ignore check can be handled in a single pass.
  - Add support for C{\\n} and C{\\x00}-separated stdin file lists.
  - Add a mode which caches hashes indexed by C{(inode,size,mtime/ctime)} so
    users can trade away a bit of accuracy for a lot more speed.
