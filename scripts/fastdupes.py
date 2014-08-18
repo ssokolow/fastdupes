@@ -118,6 +118,12 @@ DEFAULTS = {
 CHUNK_SIZE = 65536  #: Size for chunked reads from file handles
 HEAD_SIZE  = 65536  #: Limit for how many bytes will be read to compare headers
 
+#TODO: Time spent in hashlib.sha1.update is roughly 1/4 of the total warm-cache
+#      runtime and reducing HEAD_SIZE from 64K to 32K reduces the total
+#      warm-cache runtime by 25% as a result.
+#      Figure out how far HEAD_SIZE can be shrunk before gains are gobbled up
+#      by false positives in the final "hash everything" stage.
+
 #: Theoretical ideal minimum chunk size
 #:
 #: According to the hard drive data sheets I examined, the average latency to
