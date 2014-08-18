@@ -41,8 +41,8 @@ Note: This file has full Epydoc API documentation.
     syntax for dynamically adding preferences part-way through a run.
 
 @todo:
- - When in hash comparison mode, skip the second comparison for files small
-   enough to be fully-compared by the header comparison.
+ - When in hash comparison mode, start the second comparison at the point the
+   header check left off at. (Which, for small files, means to just skip it)
  - The result groups should be sorted by their first entry and the entries
    within each group should be sorted too.
  - As I understand it, C{fnmatch.fnmatch} uses regexes internally and doesn't
@@ -115,14 +115,13 @@ DEFAULTS = {
     'exclude': ['*/.svn', '*/.bzr'],
     'min_size': 25,  # Only check files this big or bigger.
 }
-CHUNK_SIZE = 65536  #: Size for chunked reads from file handles
-HEAD_SIZE  = 65536  #: Limit for how many bytes will be read to compare headers
+CHUNK_SIZE = 2**16  #: Size for chunked reads from file handles
+HEAD_SIZE  = 2**14  #: Limit for how many bytes will be read to compare headers
 
-#TODO: Time spent in hashlib.sha1.update is roughly 1/4 of the total warm-cache
-#      runtime and reducing HEAD_SIZE from 64K to 32K reduces the total
-#      warm-cache runtime by 25% as a result.
-#      Figure out how far HEAD_SIZE can be shrunk before gains are gobbled up
-#      by false positives in the final "hash everything" stage.
+#TODO: Reducing HEAD_SIZE from 64K to 16K produced excellent performance gains
+#      at effectively no cost.
+#      Figure out whether 8K or even 4K are enough to still prevent false
+#      positives in the final "hash everything" stage.
 
 #: Theoretical ideal minimum chunk size
 #:
