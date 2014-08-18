@@ -595,3 +595,5 @@ if __name__ == '__main__':
             for filename in dupeSet:
                 print filename
             print
+
+# vim: set sw=4 sts=4 expandtab :
