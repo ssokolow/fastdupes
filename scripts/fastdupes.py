@@ -586,7 +586,7 @@ if __name__ == '__main__':
         groups = groupBy(groups, hashClassifier, fun_desc='hashes')
 
     if opts.delete:
-        for pos, val in enumerate(groups):
+        for pos, val in enumerate(groups.values()):
             # TODO: Add a secondary check for symlinks for safety.
             pruneList = pruneUI(val, pos + 1, len(groups))
             for path in pruneList:
