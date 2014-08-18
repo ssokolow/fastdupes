@@ -515,7 +515,8 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
     while True:
         choice = raw_input("[%s/%s] Keepers: " % (mainPos, mainLen)).strip()
         if not choice:
-            print "You must specify at least one file to keep."
+            print ("Please enter a space/comma-separated list of numbers or "
+                  "'all'.")
             continue
         elif choice.lower() == 'all':
             return []
