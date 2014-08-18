@@ -131,18 +131,19 @@ __license__ = "GNU GPL 2.0 or later"
 import fnmatch, os, stat, sys
 
 try:
-    set() # Initializer shuts PyChecker up about unused
+    set()  # Initializer shuts PyChecker up about unused
 except NameError:
-    from sets import Set as set # pylint: disable=W0622
+    # pylint: disable=W0622
+    from sets import Set as set  # NOQA
 
 #: Default settings used by C{optparse} and some functions
 DEFAULTS = {
-          'delete' : False,
-         'exclude' : ['*/.svn', '*/.bzr'],
-        'min_size' : 25, # Only check files this big or bigger.
+    'delete': False,
+    'exclude': ['*/.svn', '*/.bzr'],
+    'min_size': 25,  # Only check files this big or bigger.
 }
-CHUNK_SIZE = 65536 #: Size for chunked reads from file handles
-HEAD_SIZE  = 65536 #: Limit for how many bytes will be read to compare headers
+CHUNK_SIZE = 65536  #: Size for chunked reads from file handles
+HEAD_SIZE  = 65536  #: Limit for how many bytes will be read to compare headers
 
 #: Theoretical ideal minimum chunk size
 #:
@@ -186,7 +187,7 @@ except AttributeError:
 # reduced potential for hash collisions SHA1's greater hash size offers.
 try:
     import hashlib
-    hasher = hashlib.sha1 # pylint: disable=E1101
+    hasher = hashlib.sha1  # pylint: disable=E1101
 except (ImportError, AttributeError):
     # Backwards-compatibility for pre-2.5 Python.
     import sha
@@ -209,7 +210,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     @rtype: C{str}
     @returns: A binary or hex-encoded SHA1 hash.
 
-    @note: It is your responsibility to close any file-like objects you pass in.
+    @note: It is your responsibility to close any file-like objects you pass in
     """
     fhash, read = hasher(), 0
     if isinstance(handle, basestring):
@@ -247,8 +248,8 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
 
     # Prepare the ignores list for most efficient use
     # TODO: Check how much of the following should actually be used
-    #pats, frag_pats, abs_pats = [], []
-    #for pat in ignores:
+    # pats, frag_pats, abs_pats = [], []
+    # for pat in ignores:
     #    if '*' in pat or '?' in pat or '[' in pat:
     #        pats.append(re.compile(fnmatch.translate(pat)))
     #    elif pat.startswith(os.sep) or os.altsep and pat.startswith(os.altsep):
@@ -279,7 +280,7 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
             for filename in fldr[2]:
                 filepath = os.path.join(fldr[0], filename)
                 if [x for x in ignores if fnmatch.fnmatch(filepath, x)]:
-                    continue # Skip IGNOREd files.
+                    continue  # Skip IGNOREd files.
 
                 paths.append(filepath)
                 count += 1
@@ -315,7 +316,7 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
     for pos, paths in enumerate(groups_in.values()):
         for path in paths:
             msg = "\rSubdividing group %d of %d by %s... (%d files examined)"
-            sys.stderr.write(msg % (pos+1, group_count, fun_desc, count))
+            sys.stderr.write(msg % (pos + 1, group_count, fun_desc, count))
 
             classifier(path, groups, *args, **kwargs)
             count += 1
@@ -344,7 +345,7 @@ def sizeClassifier(path, groups, min_size=DEFAULTS['min_size']):
     """
     filestat = _stat(path)
     if stat.S_ISLNK(filestat.st_mode):
-        return # Skip symlinks.
+        return  # Skip symlinks.
 
     if filestat.st_size >= min_size:
         groups.setdefault(filestat.st_size, set()).add(path)
@@ -432,7 +433,7 @@ def compareFiles(paths):
         try:
             hList.append((path, open(path, 'rb'), ''))
         except IOError:
-            pass #TODO: Verbose-mode output here.
+            pass  # TODO: Verbose-mode output here.
     handles.append(hList)
 
     while handles:
@@ -459,8 +460,8 @@ def compareChunks(handles, chunkSize=CHUNK_SIZE):
        files as single-file lists)
     @rtype: C{(list, list)}
 
-    @attention: File handles will be automatically-closed when no longer needed.
-    @todo: Discard the chunk contents immediately once they're no longer needed.
+    @attention: File handles will be automatically-closed when no longer needed
+    @todo: Discard the chunk contents immediately once they're no longer needed
     """
     chunks = [(path, fh, fh.read(chunkSize)) for path, fh, _ in handles]
     more, done = [], []
@@ -510,7 +511,7 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
     dupeList = sorted(dupeList)
     print
     for pos, val in enumerate(dupeList):
-        print "%d) %s" % (pos+1, val)
+        print "%d) %s" % (pos + 1, val)
     while True:
         choice = raw_input("[%s/%s] Keepers: " % (mainPos, mainLen)).strip()
         if not choice:
@@ -519,8 +520,8 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
         elif choice.lower() == 'all':
             return []
         try:
-            out = [int(x)-1 for x in choice.replace(',',' ').split()]
-            return [val for pos, val in enumerate(dupeList) if not pos in out]
+            out = [int(x) - 1 for x in choice.replace(',', ' ').split()]
+            return [val for pos, val in enumerate(dupeList) if pos not in out]
         except ValueError:
             print("Invalid choice. Please enter a space/comma-separated list"
                   "of numbers or 'all'.")
@@ -534,7 +535,7 @@ if __name__ == '__main__':
     parser.add_option('-D', '--defaults', action="store_true", dest="defaults",
         default=False, help="Display the default values for options which take"
         " arguments and then exit.")
-    parser.add_option('-d', '--delete',  action="store_true", dest="delete",
+    parser.add_option('-d', '--delete', action="store_true", dest="delete",
         help="Prompt the user for files to preserve and delete all others.")
     parser.add_option('-E', '--exact', action="store_true", dest="exact",
         default=False, help="There is a vanishingly small chance of false"
@@ -552,8 +553,8 @@ if __name__ == '__main__':
         dest="min_size", metavar="X", help="Specify a non-default minimum size"
         ". Files below this size (default: %s bytes) will be ignored."
         "" % DEFAULTS['min_size'])
-    #XXX: Should I add --verbose and/or --quiet?
-    parser.set_defaults(**DEFAULTS) # pylint: disable=W0142
+    # XXX: Should I add --verbose and/or --quiet?
+    parser.set_defaults(**DEFAULTS)  # pylint: disable=W0142
 
     opts, args = parser.parse_args()
 
@@ -575,8 +576,8 @@ if __name__ == '__main__':
     groups = groupBy(groups, sizeClassifier, 'sizes', min_size=opts.min_size)
 
     # This serves one of two purposes depending on run-mode:
-    # - Minimize the number of files checked by full-content comparison (hash)
-    # - Minimize the chances of file handle exhaustion and limit seeking (exact)
+    # - Minimize number of files checked by full-content comparison (hash)
+    # - Minimize chances of file handle exhaustion and limit seeking (exact)
     groups = groupBy(groups, hashClassifier, 'header hashes', limit=HEAD_SIZE)
 
     if opts.exact:
@@ -586,8 +587,8 @@ if __name__ == '__main__':
 
     if opts.delete:
         for pos, val in enumerate(groups):
-            #TODO: Add a secondary check for symlinks for safety.
-            pruneList = pruneUI(val, pos+1, len(groups))
+            # TODO: Add a secondary check for symlinks for safety.
+            pruneList = pruneUI(val, pos + 1, len(groups))
             for path in pruneList:
                 os.remove(path)
     else:
