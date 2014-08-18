@@ -33,6 +33,13 @@ Note: This file has full Epydoc API documentation.
 
 --snip--
 
+@todo: Add support for saying "If the choice is between files in
+    C{/srv/fservroot} and C{/srv/Burned}, automatically delete the ones in
+    C{/srv/Burned}"
+
+    Probably via a C{--prefer} command-line switch and a "prefer <path>"
+    syntax for dynamically adding preferences part-way through a run.
+
 @todo:
  - Decide what to do having discovered U{https://github.com/sahib/rmlint}
  - Rewrite to put the grouping logic in a single C{groupByKey(paths, keymaker)}
@@ -58,6 +65,9 @@ Note: This file has full Epydoc API documentation.
     - Is there such a thing as a disk access profiler I could use with this?
  - Confirm that the byte-by-byte comparison's short-circuit evaluation is
    working properly and efficiently.
+ - Look into the performance effects of using multiprocessing to set up one
+   worker per physical device... and the feasibility of identifying physical
+   devices rather than just partitions.
  - Run this through a memory profiler and look for obvious bloat to trim.
  - Look into possible solutions for pathological cases of thousands of files
    with the same size and same pre-filter results. (File handle exhaustion)
@@ -156,6 +166,11 @@ HEAD_SIZE  = 65536 #: Limit for how many bytes will be read to compare headers
 #: @todo: Actually use this value.
 #: @todo: Gather statistical information on the characteristics of
 #: commonly-duplicated files to further tune this.
+#: @note: `C{/proc/sys/vm/drop_caches} is probably B{part} of what I'll need to
+#:        use to flush caches for cold-start benchmarking.
+#:        (If nothing else, I'll still need a way to invalidate the hard
+#:        drive's cache)
+#:        (Source: https://lwn.net/Articles/562211/ )
 IDEAL_MIN_CHUNK_SIZE = 216 * 1024
 
 #{ General Helper Functions
