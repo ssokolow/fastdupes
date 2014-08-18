@@ -294,8 +294,8 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
     """Subdivide groups of paths according to a function.
 
     @param groups_in: Groups of path lists.
-    @param classifier: Function which takes a string and list of groups and
-        inserts it into an appropriate group.
+    @param classifier: Function which takes a path, C{*args},  and C{**kwargs}
+        and returns the key for the bucket to which it should be moved.
     @param fun_desc: Human-readable term for what paths are being grouped
         by for use in log messages.
     @param keep_uniques: If false, discard groups with only one member.
@@ -318,8 +318,14 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
             msg = "\rSubdividing group %d of %d by %s... (%d files examined)"
             sys.stderr.write(msg % (pos + 1, group_count, fun_desc, count))
 
-            classifier(path, groups, *args, **kwargs)
-            count += 1
+            # XXX: If I want to unify this code, I'll need to temporarily kill
+            # the file-by-file status updates because some classifiers operate
+            # on all files in the group in parallel, which means they must do
+            # their own iteration.
+            key = classifier(path, *args, **kwargs)
+            if key is not None:
+                groups.setdefault(key, set()).add(path)
+                count += 1
 
     if not keep_uniques:
         # Return only the groups with more than one file.
@@ -329,16 +335,17 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
         "(%d files examined)         \n" % (len(groups), fun_desc, count))
     return groups
 
-def sizeClassifier(path, groups, min_size=DEFAULTS['min_size']):
+def sizeClassifier(path, min_size=DEFAULTS['min_size']):
     """Sort a file into a group based on on-disk size.
 
     @param path: The path to the file to group.
-    @param groups: A dict mapping sizes to C{set()}s.
     @param min_size: Files smaller than this size (in bytes) will be ignored.
 
     @type path: C{str}
-    @type groups: C{dict}
     @type min_size: C{int}
+
+    @returns: The file size for use as a hash bucket ID.
+    @rtype: C{int}
 
     @todo: Rework the calling of stat() to minimize the number of calls. It's a
     fairly significant percentage of the time taken according to the profiler.
@@ -347,10 +354,12 @@ def sizeClassifier(path, groups, min_size=DEFAULTS['min_size']):
     if stat.S_ISLNK(filestat.st_mode):
         return  # Skip symlinks.
 
-    if filestat.st_size >= min_size:
-        groups.setdefault(filestat.st_size, set()).add(path)
+    if filestat.st_size < min_size:
+        return  # Skip files below the size limit
 
-def hashClassifier(path, groups, limit=HEAD_SIZE):
+    return filestat.st_size
+
+def hashClassifier(path, limit=HEAD_SIZE):
     """Sort a file into a group based on its SHA1 hash.
 
     @param path: The path to the file to group.
@@ -362,9 +371,11 @@ def hashClassifier(path, groups, limit=HEAD_SIZE):
     @type groups: C{dict}
     @type limit: C{int}
 
+    @returns: The file's hash for use as a hash bucket ID.
+    @rtype: C{str}
+
     """
-    headHash = hashFile(path, limit)
-    groups.setdefault(headHash, set()).add(path)
+    return hashFile(path, limit)
 
 #TODO: Rework groupBy and subgroupByContents to unify them.
 def subgroupByContents(fileGroups, uniques=False):
