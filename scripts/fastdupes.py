@@ -126,7 +126,7 @@ HEAD_SIZE  = 65536  #: Limit for how many bytes will be read to compare headers
 #:
 #: Assuming that the average uncached, seekless throughput
 #: for a modern disk drive ranges from 60MB/s (as Google and C{hdparm} seem to
-#: agree on for 7200 RPM drives) and 73MB/s (lower bound for 15K RPM drives
+#: agree on for 7200 RPM drives) to 73MB/s (lower bound for 15K RPM drives
 #: according to manufacturer data sheets), then the point where read time
 #: overtakes seek time in best-case scenarios for pseudo-parallel reads is at::
 #:  73 MB/s / 1000 ms/s * 3.0ms = 0.219MB = 219KB
@@ -267,8 +267,6 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
     """Subdivide groups of paths according to a function.
 
     @param groups_in: Groups of path lists.
-    @param classifier: Function which takes a path, C{*args},  and C{**kwargs}
-        and returns the key for the bucket to which it should be moved.
     @param classifier: Function which takes an iterable of paths, C{*args} and
         C{**kwargs} and subdivides the iterable, returning a dict mapping keys
         to new groups.
@@ -276,7 +274,7 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
         by for use in log messages.
     @param keep_uniques: If false, discard groups with only one member.
 
-    @type paths: C{dict} of iterables
+    @type groups_in: C{dict} of iterables
     @type classifier: C{function(str, dict)}
     @type fun_desc: C{str}
     @type keep_uniques: C{bool}
@@ -310,6 +308,9 @@ def groupify(function):
     """Decorator to convert a function which takes a single value and returns
     a key into one which takes a list of values and returns a dict of key-group
     mappings.
+
+    @returns: A dict mapping keys to groups of values.
+    @rtype: C{{object: set(), ...}}
     """
 
     @wraps(function)
@@ -328,7 +329,7 @@ def groupify(function):
 def sizeClassifier(path, min_size=DEFAULTS['min_size']):
     """Sort a file into a group based on on-disk size.
 
-    @param path: The path to the file to group.
+    @param path: The path to the file.
     @param min_size: Files smaller than this size (in bytes) will be ignored.
 
     @type path: C{str}
@@ -353,13 +354,11 @@ def sizeClassifier(path, min_size=DEFAULTS['min_size']):
 def hashClassifier(path, limit=HEAD_SIZE):
     """Sort a file into a group based on its SHA1 hash.
 
-    @param path: The path to the file to group.
-    @param groups: A dict mapping hashes to C{set()}s.
+    @param path: The path to the file.
     @param limit: Only this many bytes will be counted in the hash.
         Values which evaluate boolean False indicate no limit.
 
     @type path: C{str}
-    @type groups: C{dict}
     @type limit: C{int}
 
     @returns: The file's hash for use as a hash bucket ID.
