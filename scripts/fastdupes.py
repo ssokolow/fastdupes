@@ -42,7 +42,6 @@ Note: This file has full Epydoc API documentation.
 
 @todo:
  - Decide what to do having discovered U{https://github.com/sahib/rmlint}
- - Rewrite to put the grouping logic in a single C{groupByKey(paths, keymaker)}
  - The result groups should be sorted by their first entry and the entries
    within each group should be sorted too.
  - As I understand it, C{fnmatch.fnmatch} uses regexes internally and doesn't
@@ -129,6 +128,7 @@ __version__ = "0.3.6"
 __license__ = "GNU GPL 2.0 or later"
 
 import fnmatch, os, stat, sys
+from functools import wraps
 
 try:
     set()  # Initializer shuts PyChecker up about unused
@@ -296,6 +296,9 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
     @param groups_in: Groups of path lists.
     @param classifier: Function which takes a path, C{*args},  and C{**kwargs}
         and returns the key for the bucket to which it should be moved.
+    @param classifier: Function which takes an iterable of paths, C{*args} and
+        C{**kwargs} and subdivides the iterable, returning a dict mapping keys
+        to new groups.
     @param fun_desc: Human-readable term for what paths are being grouped
         by for use in log messages.
     @param keep_uniques: If false, discard groups with only one member.
@@ -314,18 +317,13 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
     """
     groups, count, group_count = {}, 0, len(groups_in)
     for pos, paths in enumerate(groups_in.values()):
-        for path in paths:
-            msg = "\rSubdividing group %d of %d by %s... (%d files examined)"
-            sys.stderr.write(msg % (pos + 1, group_count, fun_desc, count))
+        msg = "\rSubdividing group %d of %d by %s... (%d files examined)"
+        sys.stderr.write(msg % (pos + 1, group_count, fun_desc, count))
 
-            # XXX: If I want to unify this code, I'll need to temporarily kill
-            # the file-by-file status updates because some classifiers operate
-            # on all files in the group in parallel, which means they must do
-            # their own iteration.
-            key = classifier(path, *args, **kwargs)
-            if key is not None:
-                groups.setdefault(key, set()).add(path)
-                count += 1
+        # TODO: Find some way to bring back the file-by-file status text
+        for key, group in classifier(paths, *args, **kwargs).items():
+            groups.setdefault(key, set()).update(group)
+            count += len(group)
 
     if not keep_uniques:
         # Return only the groups with more than one file.
@@ -335,6 +333,25 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
         "(%d files examined)         \n" % (len(groups), fun_desc, count))
     return groups
 
+def groupify(function):
+    """Decorator to convert a function which takes a single value and returns
+    a key into one which takes a list of values and returns a dict of key-group
+    mappings.
+    """
+
+    @wraps(function)
+    def wrapper(paths, *args, **kwargs):
+        groups = {}
+
+        for path in paths:
+            key = function(path, *args, **kwargs)
+            if key is not None:
+                groups.setdefault(key, set()).add(path)
+
+        return groups
+    return wrapper
+
+@groupify
 def sizeClassifier(path, min_size=DEFAULTS['min_size']):
     """Sort a file into a group based on on-disk size.
 
@@ -359,6 +376,7 @@ def sizeClassifier(path, min_size=DEFAULTS['min_size']):
 
     return filestat.st_size
 
+@groupify
 def hashClassifier(path, limit=HEAD_SIZE):
     """Sort a file into a group based on its SHA1 hash.
 
@@ -377,46 +395,7 @@ def hashClassifier(path, limit=HEAD_SIZE):
     """
     return hashFile(path, limit=limit)
 
-#TODO: Rework groupBy and subgroupByContents to unify them.
-def subgroupByContents(fileGroups, uniques=False):
-    """Further subdivide a list of file groups by content equality.
-
-    Compares block-by-block using parallel reads. Lacks the remote potential of
-    hash collisions present with hash comparison... but is heavy on disk seeks.
-
-    See L{compareFiles} for more details.
-
-    @param fileGroups: Any dict with lists of files for keys.
-    @param uniques: If false, discard groups with only one member.
-
-    @type fileGroups: C{dict}
-    @type uniques: C{bool}
-
-    @returns: A list of lists containing identical files.
-    @rtype: C{list}
-    """
-    """
-
-    """
-    dupeGroups, processed = [], 0
-    for group in fileGroups.values():
-        msg = "\rScanning for real duplicates... %s of %s sets processed"
-        sys.stderr.write(msg % (processed, len(fileGroups)))
-        # By doing it this way, I minimize the number of file handles open at
-        # any given time. (group by group)
-        dupeGroups.extend(compareFiles(group))
-        processed += 1
-
-    if not uniques:
-        results = [x for x in dupeGroups if len(x) > 1]
-
-    msg = "\rFound %s sets of duplicate files. (processed %s potential sets)\n"
-    sys.stderr.write(msg % (len(results), len(fileGroups)))
-
-    # Keep the same API as the others.
-    return {x:y for x,y in enumerate(results)}
-
-def compareFiles(paths):
+def groupByContent(paths):
     """Byte-for-byte comparison on an arbitrary number of files in parallel.
 
     This operates by opening all files in parallel and comparing
@@ -454,7 +433,9 @@ def compareFiles(paths):
         # Add the results to the top-level lists.
         handles.extend(more)
         results.extend(done)
-    return results
+
+    # Keep the same API as the others.
+    return dict((x[0], x) for x in results)
 
 def compareChunks(handles, chunkSize=CHUNK_SIZE):
     """Group a list of file handles based on equality of the next chunk of
@@ -592,7 +573,7 @@ if __name__ == '__main__':
     groups = groupBy(groups, hashClassifier, 'header hashes', limit=HEAD_SIZE)
 
     if opts.exact:
-        groups = subgroupByContents(groups)
+        groups = groupBy(groups, groupByContent, fun_desc='contents')
     else:
         groups = groupBy(groups, hashClassifier, fun_desc='hashes')
 
