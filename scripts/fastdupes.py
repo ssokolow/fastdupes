@@ -90,33 +90,6 @@ Note: This file has full Epydoc API documentation.
     <mauke> wtf was the author thinking?
     <deitarion> mauke: Lazy, I guess. I believe I fixed that in fastdupes.
 
-@todo: Clean up string formatting::
-  <mauke> wow, a dynamic format string
-  <mauke> "%%%ds: %%s" confused me for a second there :-)
-  <mauke> doesn't python know about "%*d"?
-  <deitarion> Not sure. I've never heard of it.
-  <mauke> er, "%*s"
-  <deitarion> The dynamic format string is a trick I first picked up when doing
-              string substitution on optparse usage lines where you have to
-              escape %prog if you use it.
-  <mauke> well, in Perl I'd just do something like:
-              my $max = max(map length, keys %DEFAULTS);
-              ...
-              printf "%*s: %s\\n", $max, $key, $value;
-  <mauke> (or in C, but then I'd have to write my own max() and stuff)
-  <deitarion> Given that Google doesn't search punctuation, mind explaining
-              what %*s does?
-  <mauke> see http://perldoc.perl.org/functions/sprintf.html for details, but:
-  <mauke> you can use * instead of a hardcoded width (and .* instead of
-              precision)
-  <mauke> printf will then take an (integer) argument and substitute it
-  <mauke> so printf("%*s", 10, "foo") is equivalent to printf("%10s", "foo")
-  <deitarion> Hmm. It does support %*s. Another thing to make a TODO note for.
-  <mauke> this is more important in C because dynamically generated format
-              strings are much more painful there and the compiler can't check
-              your args anymore, but it's still nice to have
-  http://docs.python.org/library/stdtypes.html#string-formatting
-
 @newfield appname:Application Name
 
 """
@@ -556,12 +529,12 @@ if __name__ == '__main__':
     # This line is required to make it match directories
 
     if opts.defaults:
-        formatStr = "%%%ds: %%s" % max([len(x) for x in DEFAULTS])
+        maxlen = max([len(x) for x in DEFAULTS])
         for key in DEFAULTS:
             value = DEFAULTS[key]
             if isinstance(value, (list, set)):
                 value = ', '.join(value)
-            print formatStr % (key, value)
+            print "%*s: %s" % (maxlen, key, value)
         sys.exit()
 
     groups = {'': getPaths(args, opts.exclude)}
