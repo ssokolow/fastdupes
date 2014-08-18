@@ -375,7 +375,7 @@ def hashClassifier(path, limit=HEAD_SIZE):
     @rtype: C{str}
 
     """
-    return hashFile(path, limit)
+    return hashFile(path, limit=limit)
 
 #TODO: Rework groupBy and subgroupByContents to unify them.
 def subgroupByContents(fileGroups, uniques=False):
