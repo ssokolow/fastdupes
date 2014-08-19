@@ -129,8 +129,8 @@ DEFAULTS = {
     'exclude': ['*/.svn', '*/.bzr'],
     'min_size': 25,  # Only check files this big or bigger.
 }
-CHUNK_SIZE = 2**16  #: Size for chunked reads from file handles
-HEAD_SIZE  = 2**14  #: Limit for how many bytes will be read to compare headers
+CHUNK_SIZE = 2 ** 16  #: Size for chunked reads from file handles
+HEAD_SIZE  = 2 ** 14  #: Limit how many bytes will be read to compare headers
 
 #TODO: Reducing HEAD_SIZE from 64K to 16K produced excellent performance gains
 #      at effectively no cost.
