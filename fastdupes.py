@@ -192,7 +192,7 @@ out = OverWriter(sys.stderr)
 #}
 #{ Processing Pipeline
 
-def getPaths(roots, ignores=DEFAULTS['exclude']):
+def getPaths(roots, ignores=None):
     """
     Convert a list of paths containing directories into a list of absolute file
     paths.
@@ -208,7 +208,7 @@ def getPaths(roots, ignores=DEFAULTS['exclude']):
     filename is a fairly significant percentage of the time taken according to
     the profiler.
     """
-    paths, count = [], 0
+    paths, count, ignores = [], 0, ignores or []
 
     # Prepare the ignores list for most efficient use
     # TODO: Check how much of the following should actually be used
