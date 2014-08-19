@@ -51,12 +51,6 @@ more quickly than fdupes by using smarter algorithms.
  - Look into possible solutions for pathological cases of thousands of files
    with the same size and same pre-filter results. (File handle exhaustion)
  - Support displaying duplicated directory trees as single results.
- - Look into the performance effects of using multiprocessing to set up one
-   worker per physical device... and the feasibility of identifying physical
-   devices rather than just partitions.
-   - Also, explore whether using more than one worker per physical device
-     can result in a performance improvement during the header-reading phase
-     if the hard drive supports NCQ/TCQ.
  - Run this through a memory profiler and look for obvious bloat to trim.
  - Look into supporting gettext localization.
  - Decide what to do having discovered U{https://github.com/sahib/rmlint}
