@@ -4,32 +4,8 @@
 Find Dupes Fast
 By Stephan Sokolow (ssokolow.com)
 
-Inspired by Dave Bolton's dedupe.py (http://davebolton.net/blog/?p=173) and
-Reasonable Software's NoClone.
-
 A simple script which identifies duplicate files several orders of magnitude
 more quickly than fdupes by using smarter algorithms.
-
-This script supports both comparison by SHA1 hash and, to eliminate the
-vanishingly-small but present risk of hash collisions, also supports exact
-file comparison.
-
-(Exact comparison does a lot of seeking, so it will be significantly slower
-on a traditional hard drive, but may be noticeably faster on a solid-state
-drive since it reads files incrementally and can stop as soon as a difference
-is encountered.)
-
-Grouping by size and doing a preliminary pass to compare file headers are both
-used to significantly reduce the amount of comparison necessary. This also
-serves to limit both the memory consumption and the number of open file
-handles when doing exact comparisons.
-
-Finally, unlike with fdupes, under no circumstances will the --delete option
-allow you to accidentally delete every copy of a file. (No --symlinks option is
-supported and this script will not be confused by specifying the same directory
-multiple times on the command line or specifying a directory and its parent.)
-
-Note: This file has full Epydoc API documentation.
 
 --snip--
 
