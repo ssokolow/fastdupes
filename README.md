@@ -1,5 +1,7 @@
 # Find Dupes Fast
 
+[![Stories in Ready](https://badge.waffle.io/ssokolow/fastdupes.svg?label=ready&title=Ready)](https://waffle.io/ssokolow/fastdupes)
+
 Find Dupes Fast (A.K.A. fastdupes.py) is a simple script which identifies
 duplicate files several orders of magnitude more quickly than
 [fdupes](https://packages.debian.org/stable/fdupes) by using smarter
