@@ -48,8 +48,7 @@ more quickly than fdupes by using smarter algorithms.
    working properly and efficiently.
  - Once ready, announce this in a comment at
    U{http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/}
- - Identify the ideal values for L{CHUNK_SIZE} and L{HEAD_SIZE}... or
-   how about dynamically tuning the read increment size based on the number of
+ - How about dynamically tuning the read increment size based on the number of
    files being compared and possibly the available RAM? (To minimize seeking)
     - C{block_size = min(max_block_size, max_consumption / file_count)}
     - Maybe a 64K maximum block size, 4K minimum block size, and an 8MB max
@@ -121,11 +120,6 @@ DEFAULTS = {
 }
 CHUNK_SIZE = 2 ** 16  #: Size for chunked reads from file handles
 HEAD_SIZE  = 2 ** 14  #: Limit how many bytes will be read to compare headers
-
-#TODO: Reducing HEAD_SIZE from 64K to 16K produced excellent performance gains
-#      at effectively no cost.
-#      Figure out whether 8K or even 4K are enough to still prevent false
-#      positives in the final "hash everything" stage.
 
 #: @note: `C{/proc/sys/vm/drop_caches} is probably B{part} of what I'll need to
 #:        use to flush caches for cold-start benchmarking.
