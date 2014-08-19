@@ -115,12 +115,6 @@ DEFAULTS = {
 CHUNK_SIZE = 2 ** 16  #: Size for chunked reads from file handles
 HEAD_SIZE  = 2 ** 14  #: Limit how many bytes will be read to compare headers
 
-#: @note: `C{/proc/sys/vm/drop_caches} is probably B{part} of what I'll need to
-#:        use to flush caches for cold-start benchmarking.
-#:        (If nothing else, I'll still need a way to invalidate the hard
-#:        drive's cache)
-#:        (Source: https://lwn.net/Articles/562211/ )
-
 #{ General Helper Functions
 
 # We need os.lstat so we can skip symlinks, but we want Windows portability too
