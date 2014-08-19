@@ -1,5 +1,6 @@
 # Find Dupes Fast
 
+[![Code Health](https://landscape.io/github/ssokolow/fastdupes/master/landscape.png)](https://landscape.io/github/ssokolow/fastdupes/master)
 [![Stories in Ready](https://badge.waffle.io/ssokolow/fastdupes.svg?label=ready&title=Ready)](https://waffle.io/ssokolow/fastdupes)
 
 Find Dupes Fast (A.K.A. fastdupes.py) is a simple script which identifies
