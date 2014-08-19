@@ -127,34 +127,11 @@ HEAD_SIZE  = 2 ** 14  #: Limit how many bytes will be read to compare headers
 #      Figure out whether 8K or even 4K are enough to still prevent false
 #      positives in the final "hash everything" stage.
 
-#: Theoretical ideal minimum chunk size
-#:
-#: According to the hard drive data sheets I examined, the average latency to
-#: acquire a specific block (seek time, rotational latency, etc.) ranges from
-#: roughly 14ms to 3ms.
-#:
-#: Assuming that the average uncached, seekless throughput
-#: for a modern disk drive ranges from 60MB/s (as Google and C{hdparm} seem to
-#: agree on for 7200 RPM drives) to 73MB/s (lower bound for 15K RPM drives
-#: according to manufacturer data sheets), then the point where read time
-#: overtakes seek time in best-case scenarios for pseudo-parallel reads is at::
-#:  73 MB/s / 1000 ms/s * 3.0ms = 0.219MB = 219KB
-#:  219KB * (1000/1024 KB/KiB) = 213.8672KiB
-#:
-#: As such, 216KiB (round up to a multiple of 4KiB) should be a good
-#: rule-of-thumb lower bound for chunk sizes. (Actual chunk size must take
-#: available RAM into account since, theoretically, a user may use this on a
-#: system with tons of dupes of a single file)
-#:
-#: @todo: Actually use this value.
-#: @todo: Gather statistical information on the characteristics of
-#: commonly-duplicated files to further tune this.
 #: @note: `C{/proc/sys/vm/drop_caches} is probably B{part} of what I'll need to
 #:        use to flush caches for cold-start benchmarking.
 #:        (If nothing else, I'll still need a way to invalidate the hard
 #:        drive's cache)
 #:        (Source: https://lwn.net/Articles/562211/ )
-IDEAL_MIN_CHUNK_SIZE = 216 * 1024
 
 #{ General Helper Functions
 
