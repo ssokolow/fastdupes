@@ -544,7 +544,7 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
 #}
 
 if __name__ == '__main__':
-    from optparse import OptionParser
+    from optparse import OptionParser, OptionGroup
     parser = OptionParser(usage="%prog [options] <folder path> ...",
             version="%s v%s" % (__appname__, __version__))
     parser.add_option('-D', '--defaults', action="store_true", dest="defaults",
@@ -559,16 +559,19 @@ if __name__ == '__main__':
         " of disk seeks, so, on traditional moving-platter media, this trades"
         " a LOT of performance for a very tiny amount of safety most people"
         " don't need.")
-    parser.add_option('-e', '--exclude', action="append", dest="exclude",
+    # XXX: Should I add --verbose and/or --quiet?
+
+    filter_group = OptionGroup(parser, "Input Filtering")
+    filter_group.add_option('-e', '--exclude', action="append", dest="exclude",
         metavar="PAT", help="Specify a globbing pattern to be"
         " added to the internal blacklist. This option can be used multiple"
         " times. Provide a dash (-) as your first exclude to override the"
         " pre-programmed defaults.")
-    parser.add_option('--min-size', action="store", type="int",
+    filter_group.add_option('--min-size', action="store", type="int",
         dest="min_size", metavar="X", help="Specify a non-default minimum size"
         ". Files below this size (default: %s bytes) will be ignored."
         "" % DEFAULTS['min_size'])
-    # XXX: Should I add --verbose and/or --quiet?
+    parser.add_option_group(filter_group)
     parser.set_defaults(**DEFAULTS)  # pylint: disable=W0142
 
     opts, args = parser.parse_args()
