@@ -3,7 +3,7 @@
 [![Code Health](https://landscape.io/github/ssokolow/fastdupes/master/landscape.png)](https://landscape.io/github/ssokolow/fastdupes/master)
 [![Stories in Ready](https://badge.waffle.io/ssokolow/fastdupes.svg?label=ready&title=Ready)](https://waffle.io/ssokolow/fastdupes)
 
-Find Dupes Fast (A.K.A. fastdupes.py) is a simple script which identifies
+Find Dupes Fast (A.K.A. `fastdupes.py`) is a simple script which identifies
 duplicate files several orders of magnitude more quickly than
 [fdupes](https://packages.debian.org/stable/fdupes) by using smarter
 algorithms.
@@ -21,20 +21,17 @@ documentation, the `--help` option is being constantly improved.
 
 The default mode of operation is as follows:
 
-1. The given paths are recursively walked (subject to `--exclude` rules) to
-   gather a list of files for comparison.
-2. Gathered files are grouped by their size in bytes (because `stat()` is fast
-   compared to actually reading file content) and any groups containing only
-   one entry are discarded.
-3. Groups are further subdivided by taking the SHA1 hash of the first `16KiB`
-   of each file and, again, discarding groups which now contain only one item.
-4. The few files which remain are read in `64KiB` chunks and groups are again
-   subdivided based on SHA1 hashes. This time, of their full contents.
-5. Any groups which contain more than one item contain sets of duplicated
-   files.
+1. The given paths are recursively walked (subject to `--exclude`) to
+   gather a list of files.
+2. Files are grouped by size (because `stat()` is fast compared to `read()`)
+   and single-entry groups are pruned away.
+3. Groups are subdivided and pruned by hashing the first `16KiB` of each file.
+4. Groups are subdivided and pruned again by hashing full contents.
+5. Any groups which remain are sets of duplicates.
 
-This approach provides an excellent compromise between runtime and memory
-consumption.
+Because this multi-pass approach eliminates files from consideration as early
+as possible, it reduces the amount of disk I/O that needs to be performed by
+at least an order of magnitude, greatly speeding up the process.
 
 Here are the final status messages from a cold-cache run I did on my machine to
 root out cases where my manual approach to backing up things that don't change
@@ -50,6 +47,10 @@ Found 1197 sets of files with identical hashes. (2400 files examined)
 
 Those `... files examined` numbers should show its merits. The total wall clock
 runtime was 280.155 seconds.
+
+Memory efficiency is also kept high by building full-content hashes
+incrementally in `64KiB` chunks so that full files never need to be loaded into
+memory.
 
 ## Exact Comparison Mode
 
@@ -83,9 +84,10 @@ However, unlike with fdupes, these prompts make it impossible to accidentally
 delete every copy of a file. (Bugs excepted, of course. A full unit test suite
 to ensure this behaviour is still on the TODO list.)
 
-* The `--delete` UI asks you which files you'd like to *keep* and won't accept an
-empty response
-* Specifying a directory more than once will not result in a file being listed
-  as a duplicate of itself. Nor will specifying a directory and its ancestor.
+* The `--delete` UI asks you which files you'd like to *keep* and won't accept
+  an empty response.
+* Specifying a directory more than once on the command line will not result in
+  a file being listed as a duplicate of itself. Nor will specifying a directory
+  and its ancestor.
 * A `--symlinks` option will not be added until safety can be guaranteed.
 
