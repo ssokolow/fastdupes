@@ -40,6 +40,14 @@ Note: This file has full Epydoc API documentation.
     Probably via a C{--prefer} command-line switch and a "prefer <path>"
     syntax for dynamically adding preferences part-way through a run.
 
+@todo: Add support for typing "link" into the C{--delete} chooser to request
+       that all matches be hard-linked together.
+
+@todo: Add an option with a name like C{--autolink} or C{--link-if} which
+       lets you express things like "If one of the filenames is C{Folder.jpg}
+       or C{AlbumArtSmall.jpg}, then hardlink them all together without
+       asking."
+
 @todo:
  - When in hash comparison mode, start the second comparison at the point the
    header check left off at. (Which, for small files, means to just skip it)
@@ -77,6 +85,9 @@ Note: This file has full Epydoc API documentation.
  - Look into the performance effects of using multiprocessing to set up one
    worker per physical device... and the feasibility of identifying physical
    devices rather than just partitions.
+   - Also, explore whether using more than one worker per physical device
+     can result in a performance improvement during the header-reading phase
+     if the hard drive supports NCQ/TCQ.
  - Run this through a memory profiler and look for obvious bloat to trim.
  - Look into supporting gettext localization.
  - Decide what to do having discovered U{https://github.com/sahib/rmlint}
