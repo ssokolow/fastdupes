@@ -126,7 +126,7 @@ except NameError:
 #: Default settings used by C{optparse} and some functions
 DEFAULTS = {
     'delete': False,
-    'exclude': ['*/.svn', '*/.bzr'],
+    'exclude': ['*/.svn', '*/.bzr', '*/.git', '*/.hg'],
     'min_size': 25,  # Only check files this big or bigger.
 }
 CHUNK_SIZE = 2 ** 16  #: Size for chunked reads from file handles
