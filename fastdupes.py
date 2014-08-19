@@ -473,7 +473,7 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
         choice = raw_input("[%s/%s] Keepers: " % (mainPos, mainLen)).strip()
         if not choice:
             print ("Please enter a space/comma-separated list of numbers or "
-                  "'all'.")
+                   "'all'.")
             continue
         elif choice.lower() == 'all':
             return []
@@ -487,6 +487,7 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
 #}
 
 if __name__ == '__main__':
+    # pylint: disable=bad-continuation
     from optparse import OptionParser, OptionGroup
     parser = OptionParser(usage="%prog [options] <folder path> ...",
             version="%s v%s" % (__appname__, __version__))
