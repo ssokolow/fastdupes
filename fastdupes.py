@@ -486,7 +486,8 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
 
 #}
 
-if __name__ == '__main__':
+def main():
+    """The main entry point, compatible with setuptools entry points."""
     # pylint: disable=bad-continuation
     from optparse import OptionParser, OptionGroup
     parser = OptionParser(usage="%prog [options] <folder path> ...",
@@ -558,5 +559,8 @@ if __name__ == '__main__':
             for filename in dupeSet:
                 print filename
             print
+
+if __name__ == '__main__':
+    main()
 
 # vim: set sw=4 sts=4 expandtab :
