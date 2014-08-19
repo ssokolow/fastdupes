@@ -48,12 +48,6 @@ more quickly than fdupes by using smarter algorithms.
    working properly and efficiently.
  - Once ready, announce this in a comment at
    U{http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/}
- - How about dynamically tuning the read increment size based on the number of
-   files being compared and possibly the available RAM? (To minimize seeking)
-    - C{block_size = min(max_block_size, max_consumption / file_count)}
-    - Maybe a 64K maximum block size, 4K minimum block size, and an 8MB max
-      consumption? (subordinate to minimum block size when in conflict)
-    - Is there such a thing as a disk access profiler I could use with this?
  - Look into possible solutions for pathological cases of thousands of files
    with the same size and same pre-filter results. (File handle exhaustion)
  - Support displaying duplicated directory trees as single results.
