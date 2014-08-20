@@ -9,21 +9,6 @@ more quickly than fdupes by using smarter algorithms.
 
 --snip--
 
-@todo: Add support for saying "If the choice is between files in
-    C{/srv/fservroot} and C{/srv/Burned}, automatically delete the ones in
-    C{/srv/Burned}"
-
-    Probably via a C{--prefer} command-line switch and a "prefer <path>"
-    syntax for dynamically adding preferences part-way through a run.
-
-@todo: Add support for typing "link" into the C{--delete} chooser to request
-       that all matches be hard-linked together.
-
-@todo: Add an option with a name like C{--autolink} or C{--link-if} which
-       lets you express things like "If one of the filenames is C{Folder.jpg}
-       or C{AlbumArtSmall.jpg}, then hardlink them all together without
-       asking."
-
 @todo:
  - When in hash comparison mode, start the second comparison at the point the
    header check left off at. (Which, for small files, means to just skip it)
@@ -35,7 +20,6 @@ more quickly than fdupes by using smarter algorithms.
    - I should also look into what the performance effect are of
      programmatically combining multiple C{fnmatch.translate} outputs so
      the ignore check can be handled in a single pass.
- - Add support for C{\\n} and C{\\x00}-separated stdin file lists.
  - Add a mode which caches hashes indexed by C{(inode,size,mtime/ctime)} so
    users can trade away a bit of accuracy for a lot more speed.
  - Look into the performance effect of checking whether excludes contain
@@ -53,19 +37,6 @@ more quickly than fdupes by using smarter algorithms.
  - Support displaying duplicated directory trees as single results.
  - Run this through a memory profiler and look for obvious bloat to trim.
  - Look into supporting gettext localization.
- - Decide what to do having discovered U{https://github.com/sahib/rmlint}
-
-@todo: Look into C{schweikh3.c}::
-   <mauke> feature request: if you could make it output compatible with
-   http://www.ioccc.org/1998/schweikh3.hint , that would be sweet
-   (http://www.ioccc.org/1998/schweikh3.c)
-
-@todo: Look into C{samefile}::
-    <mauke> I don't like the way fdupes works. samefile's interface is superior
-    <mauke> it says if you specify a directory twice, it will list files as
-            their own duplicates.
-    <mauke> wtf was the author thinking?
-    <deitarion> mauke: Lazy, I guess. I believe I fixed that in fastdupes.
 
 @newfield appname:Application Name
 
