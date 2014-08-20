@@ -10,10 +10,6 @@ more quickly than fdupes by using smarter algorithms.
 --snip--
 
 @todo:
- - When in hash comparison mode, start the second comparison at the point the
-   header check left off at. (Which, for small files, means to just skip it)
- - The result groups should be sorted by their first entry and the entries
-   within each group should be sorted too.
  - As I understand it, C{fnmatch.fnmatch} uses regexes internally and doesn't
    cache them. Given how many times it gets called, I should try using
    C{re.compile} with C{fnmatch.translate} instead.
@@ -34,7 +30,6 @@ more quickly than fdupes by using smarter algorithms.
    U{http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/}
  - Look into possible solutions for pathological cases of thousands of files
    with the same size and same pre-filter results. (File handle exhaustion)
- - Support displaying duplicated directory trees as single results.
  - Run this through a memory profiler and look for obvious bloat to trim.
  - Look into supporting gettext localization.
 
