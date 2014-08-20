@@ -60,11 +60,10 @@ __license__ = "GNU GPL 2.0 or later"
 import fnmatch, os, stat, sys
 from functools import wraps
 
-try:
-    set()  # Initializer shuts PyChecker up about unused
-except NameError:
-    # pylint: disable=W0622
-    from sets import Set as set  # NOQA
+# Note: In my `python -m timeit` tests, the difference between MD5 and SHA1 was
+# negligible, so there is no meaningful reason not to take advantage of the
+# reduced potential for hash collisions that SHA1's greater hash size offers.
+import hashlib
 
 #: Default settings used by C{optparse} and some functions
 DEFAULTS = {
@@ -82,17 +81,6 @@ try:
     _stat = os.lstat
 except AttributeError:
     _stat = os.stat
-
-# Note: In my `python -m timeit` tests, the difference between MD5 and SHA1 was
-# negligible, so there is no meaningful reason not to take advantage of the
-# reduced potential for hash collisions SHA1's greater hash size offers.
-try:
-    import hashlib
-    hasher = hashlib.sha1  # pylint: disable=E1101
-except (ImportError, AttributeError):
-    # Backwards-compatibility for pre-2.5 Python.
-    import sha
-    hasher = sha.new
 
 def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     """Generate an SHA1 hash for a potentially long file.
@@ -113,7 +101,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
 
     @note: It is your responsibility to close any file-like objects you pass in
     """
-    fhash, read = hasher(), 0
+    fhash, read = hashlib.sha1(), 0
     if isinstance(handle, basestring):
         handle = file(handle, 'rb')
 
