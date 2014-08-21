@@ -10,14 +10,6 @@ more quickly than fdupes by using smarter algorithms.
 --snip--
 
 @todo:
- - Add a mode which caches hashes indexed by C{(inode,size,mtime/ctime)} so
-   users can trade away a bit of accuracy for a lot more speed.
- - Group files by C{stat().st_ino} to avoid reading from the same inode more
-   than once and to allow advanced handling of hardlinks in C{--delete} mode.
-    - Offer a switch to automatically hardlink all duplicates found which share
-      a common partition.
- - Confirm that the byte-by-byte comparison's short-circuit evaluation is
-   working properly and efficiently.
  - Once ready, announce this in a comment at
    U{http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/}
  - Look into possible solutions for pathological cases of thousands of files
