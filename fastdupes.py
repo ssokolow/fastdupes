@@ -10,16 +10,8 @@ more quickly than fdupes by using smarter algorithms.
 --snip--
 
 @todo:
- - As I understand it, C{fnmatch.fnmatch} uses regexes internally and doesn't
-   cache them. Given how many times it gets called, I should try using
-   C{re.compile} with C{fnmatch.translate} instead.
-   - I should also look into what the performance effect are of
-     programmatically combining multiple C{fnmatch.translate} outputs so
-     the ignore check can be handled in a single pass.
  - Add a mode which caches hashes indexed by C{(inode,size,mtime/ctime)} so
    users can trade away a bit of accuracy for a lot more speed.
- - Look into the performance effect of checking whether excludes contain
-   meta-characters and using simple string matching if they don't.
  - Group files by C{stat().st_ino} to avoid reading from the same inode more
    than once and to allow advanced handling of hardlinks in C{--delete} mode.
     - Offer a switch to automatically hardlink all duplicates found which share
