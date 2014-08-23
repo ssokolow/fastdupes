@@ -112,6 +112,16 @@ class OverWriter(object):  # pylint: disable=too-few-public-methods
             self.isatty = os.isatty(self.fobj.fileno())
 
     def write(self, text, newline=False):
+        """Use CR to overdraw the current line with the given text.
+
+        This function transparently handles tracking how much overdrawing is
+        necessary to erase the previous line when used consistently.
+
+        @param text: The text to be outputted
+        @param newline: Whether to start a new line and reset the length count.
+        @type text: C{str}
+        @type newline: C{bool}
+        """
         if not self.isatty:
             self.fobj.write('%s\n' % text)
             return
