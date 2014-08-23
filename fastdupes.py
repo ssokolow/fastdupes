@@ -468,6 +468,59 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
 
 #}
 
+def find_dupes(paths, exact=False, ignores=None, min_size=0):
+    """High-level code to walk a set of paths and find duplicate groups.
+
+    @param exact: Whether to compare file contents by hash or by reading
+                  chunks in parallel.
+
+    See L{getPaths} and L{sizeClassifier} for more argument documentation.
+
+    @returns: A list of lists representing du"""
+    groups = {'': getPaths(paths, ignores)}
+    groups = groupBy(groups, sizeClassifier, 'sizes', min_size=min_size)
+
+    # This serves one of two purposes depending on run-mode:
+    # - Minimize number of files checked by full-content comparison (hash)
+    # - Minimize chances of file handle exhaustion and limit seeking (exact)
+    groups = groupBy(groups, hashClassifier, 'header hashes', limit=HEAD_SIZE)
+
+    if exact:
+        groups = groupBy(groups, groupByContent, fun_desc='contents')
+    else:
+        groups = groupBy(groups, hashClassifier, fun_desc='hashes')
+
+    return groups
+
+def print_defaults():
+    """Display the default values for all command-line options"""
+    maxlen = max([len(x) for x in DEFAULTS])
+    for key in DEFAULTS:
+        value = DEFAULTS[key]
+        if isinstance(value, (list, set)):
+            value = ', '.join(value)
+        print "%*s: %s" % (maxlen, key, value)
+
+def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
+    """Code to handle the --delete command-line option."""
+    prefer_list = prefer_list or []
+
+    for pos, group in enumerate(groups.values()):
+        # TODO: Add a secondary check for symlinks for safety.
+        preferred, pruneList = prefer_filter(group, prefer_list)
+        if not preferred:
+            if interactive:
+                pruneList = pruneUI(group, pos + 1, len(groups))
+                preferred = [x for x in group if x not in pruneList]
+            else:
+                preferred, pruneList = pruneList, []
+
+        assert preferred  # Safety check
+        for path in pruneList:
+            print "Removing %s" % path
+            if not dry_run:
+                os.remove(path)
+
 def main():
     """The main entry point, compatible with setuptools entry points."""
     # pylint: disable=bad-continuation
@@ -523,51 +576,20 @@ def main():
     # This line is required to make it match directories
 
     if opts.defaults:
-        maxlen = max([len(x) for x in DEFAULTS])
-        for key in DEFAULTS:
-            value = DEFAULTS[key]
-            if isinstance(value, (list, set)):
-                value = ', '.join(value)
-            print "%*s: %s" % (maxlen, key, value)
+        print_defaults()
         sys.exit()
 
-    groups = {'': getPaths(args, opts.exclude)}
-    groups = groupBy(groups, sizeClassifier, 'sizes', min_size=opts.min_size)
+    groups = find_dupes(args, opts.exact, opts.exclude, opts.min_size)
 
-    # This serves one of two purposes depending on run-mode:
-    # - Minimize number of files checked by full-content comparison (hash)
-    # - Minimize chances of file handle exhaustion and limit seeking (exact)
-    groups = groupBy(groups, hashClassifier, 'header hashes', limit=HEAD_SIZE)
-
-    if opts.exact:
-        groups = groupBy(groups, groupByContent, fun_desc='contents')
-    else:
-        groups = groupBy(groups, hashClassifier, fun_desc='hashes')
-
-    prefer_list = [os.path.abspath(x) for x in opts.prefer]
+    opts.prefer = [os.path.abspath(x) for x in opts.prefer]
     # TODO: Display a warning if any of these don't exist
 
     if opts.delete:
-        for pos, group in enumerate(groups.values()):
-            # TODO: Add a secondary check for symlinks for safety.
-            preferred, pruneList = prefer_filter(group, prefer_list)
-            if not preferred:
-                if opts.noninteractive:
-                    preferred, pruneList = pruneList, []
-                else:
-                    pruneList = pruneUI(group, pos + 1, len(groups))
-                    preferred = [x for x in group if x not in pruneList]
-
-            assert preferred  # Safety check
-            for path in pruneList:
-                print "Removing %s" % path
-                if not opts.dry_run:
-                    os.remove(path)
+        delete_dupes(groups, opts.prefer, not opts.noninteractive,
+                     opts.dry_run)
     else:
         for dupeSet in groups.values():
-            for filename in dupeSet:
-                print filename
-            print
+            print '\n'.join(dupeSet) + '\n'
 
 if __name__ == '__main__':
     main()
