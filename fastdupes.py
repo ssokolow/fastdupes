@@ -41,7 +41,7 @@ __author__ = "Stephan Sokolow (deitarion/SSokolow)"
 __version__ = "0.3.6"
 __license__ = "GNU GPL 2.0 or later"
 
-import fnmatch, os, stat, sys
+import fnmatch, os, re, stat, sys
 from functools import wraps
 
 # Note: In my `python -m timeit` tests, the difference between MD5 and SHA1 was
@@ -65,6 +65,24 @@ try:
     _stat = os.lstat
 except AttributeError:
     _stat = os.stat
+
+def multiglob_compile(globs, prefix=False):
+    """Generate a single "A or B or C" regex from a list of shell globs.
+
+    @param globs: An iterable of strings to be processed by C{fnmatch}.
+    @param prefix: If C{True}, then C{match()} will perform prefix matching
+                   rather than exact string matching.
+    @type globs: iterable of C{str}
+    @type prefix: C{bool}
+
+    @todo: Also use this for excludes.
+    """
+    if not globs:
+        # An empty globs list should only match empty strings
+        return re.compile('^$')
+    elif prefix:
+        globs = [x + '*' for x in globs]
+    return re.compile('|'.join(fnmatch.translate(x) for x in globs))
 
 def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     """Generate an SHA1 hash for a potentially long file.
@@ -156,8 +174,8 @@ def getPaths(roots, ignores=None):
     paths.
 
     @param roots: Files and folders to walk.
-    @param ignores: A list of C{fnmatch.fnmatch} patterns to avoid walking and
-        omit from results.
+    @param ignores: A list of shell globs to avoid walking and omit from
+                    results.
 
     @returns: List of paths containing only files.
     @rtype: C{list}
@@ -169,16 +187,7 @@ def getPaths(roots, ignores=None):
     paths, count, ignores = [], 0, ignores or []
 
     # Prepare the ignores list for most efficient use
-    # TODO: Check how much of the following should actually be used
-    # pats, frag_pats, abs_pats = [], []
-    # for pat in ignores:
-    #    if '*' in pat or '?' in pat or '[' in pat:
-    #        pats.append(re.compile(fnmatch.translate(pat)))
-    #    elif (pat.startswith(os.sep) or os.altsep and
-    #          pat.startswith(os.altsep)):
-    #        abs_pats.append(pat)
-    #    else:
-    #        frag_pats.append(pat)
+    ignore_re = multiglob_compile(ignores, prefix=False)
 
     for root in roots:
         # For safety, only use absolute, real paths.
@@ -197,12 +206,12 @@ def getPaths(roots, ignores=None):
             # Don't even descend into IGNOREd directories.
             for subdir in fldr[1]:
                 dirpath = os.path.join(fldr[0], subdir)
-                if [x for x in ignores if fnmatch.fnmatch(dirpath, x)]:
+                if ignore_re.match(dirpath):
                     fldr[1].remove(subdir)
 
             for filename in fldr[2]:
                 filepath = os.path.join(fldr[0], filename)
-                if [x for x in ignores if fnmatch.fnmatch(filepath, x)]:
+                if ignore_re.match(filepath):
                     continue  # Skip IGNOREd files.
 
                 paths.append(filepath)
@@ -406,28 +415,6 @@ def compareChunks(handles, chunkSize=CHUNK_SIZE):
 #}
 #{ User Interface
 
-def prefer_filter(paths, prefer_list):
-    """Divide a list of paths by whether they match any of a list of prefixes.
-
-    @param paths: Paths to be divided up
-    @param prefer_list: Prefixes to be used for division
-
-    @type paths: C{[str]}
-    @type prefer_list: C{[str]}
-
-    @returns: C{(preferred, rejected)}
-    @rtype: C{(list, list)}
-    """
-    preferred, rejected = [], []
-
-    for path in paths:
-        if any(x for x in prefer_list if path_is_descendant(x, path)):
-            preferred.append(path)
-        else:
-            rejected.append(path)
-
-    return preferred, rejected
-
 def pruneUI(dupeList, mainPos=1, mainLen=1):
     """Display a list of files and prompt for ones to be kept.
 
@@ -504,10 +491,12 @@ def print_defaults():
 def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
     """Code to handle the --delete command-line option."""
     prefer_list = prefer_list or []
+    prefer_re = multiglob_compile(prefer_list, prefix=True)
 
     for pos, group in enumerate(groups.values()):
         # TODO: Add a secondary check for symlinks for safety.
-        preferred, pruneList = prefer_filter(group, prefer_list)
+        preferred = [x for x in group if prefer_re.match(x)]
+        pruneList = [x for x in group if x not in preferred]
         if not preferred:
             if interactive:
                 pruneList = pruneUI(group, pos + 1, len(groups))
@@ -559,7 +548,7 @@ def main():
         "files. Just list what actions would be performed. (Good for testing "
         "values for --prefer)")
     behaviour_group.add_option('--prefer', action="append", dest="prefer",
-        metavar="PATH", default=[], help="Specify a directory within which "
+        metavar="PATH", default=[], help="Append a globbing pattern which "
         "--delete should automatically prefer (rather than prompting) when it "
         "occurs in a list of duplicates.")
     behaviour_group.add_option('--noninteractive', action="store_true",
@@ -580,9 +569,6 @@ def main():
         sys.exit()
 
     groups = find_dupes(args, opts.exact, opts.exclude, opts.min_size)
-
-    opts.prefer = [os.path.abspath(x) for x in opts.prefer]
-    # TODO: Display a warning if any of these don't exist
 
     if opts.delete:
         delete_dupes(groups, opts.prefer, not opts.noninteractive,
