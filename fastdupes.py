@@ -543,7 +543,7 @@ def main():
     behaviour_group.add_option('-d', '--delete', action="store_true",
         dest="delete", help="Prompt the user for files to preserve and delete "
                             "all others.")
-    behaviour_group.add_option('--dry-run', action="store_true",
+    behaviour_group.add_option('-n', '--dry-run', action="store_true",
         dest="dry_run", metavar="PREFIX", help="Don't actually delete any "
         "files. Just list what actions would be performed. (Good for testing "
         "values for --prefer)")
