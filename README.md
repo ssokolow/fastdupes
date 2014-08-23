@@ -91,3 +91,22 @@ to ensure this behaviour is still on the TODO list.)
   and its ancestor.
 * A `--symlinks` option will not be added until safety can be guaranteed.
 
+### The `--prefer` and `--noninteractive` options
+
+Often, when deduplicating with `--delete`, you already know that files in one
+directory tree should be preferred over files in another.
+
+For example, if you have a folder named `To Burn` and another named `Burned`,
+then you shouldn't have to tell your deduplicator that files in the former
+should be deleted.
+
+By specifying `--prefer=*/Burned` on the command-line, you can skip the
+prompts in such a situation while still receiving prompts for other files.
+
+Furthermore, if you'd like a fully unattended deduplication run, include the
+`--noninteractive` option and fastdupes will assume that you want to keep
+all copies (do nothing) when it would otherwise prompt.
+
+Finally, a `--dry-run` option is provided in case you need to test the effects
+of a `--delete` setup without risk to your files.
+
