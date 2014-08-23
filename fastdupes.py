@@ -453,8 +453,7 @@ def main():
         " pre-programmed defaults.")
     filter_group.add_option('--min-size', action="store", type="int",
         dest="min_size", metavar="X", help="Specify a non-default minimum size"
-        ". Files below this size (default: %s bytes) will be ignored."
-        "" % DEFAULTS['min_size'])
+        ". Files below this size (default: %default bytes) will be ignored.")
     parser.add_option_group(filter_group)
     parser.set_defaults(**DEFAULTS)  # pylint: disable=W0142
 
