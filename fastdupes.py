@@ -154,17 +154,6 @@ class OverWriter(object):  # pylint: disable=too-few-public-methods
 
 out = OverWriter(sys.stderr)
 
-def path_is_descendant(ancestor, descendant):
-    """Check whether a given path is a descendant of another given path.
-
-    @note: You can't just use C{startswith()} without adding C{os.sep} because,
-           without it, you'll match siblings with a common prefix and
-           normalization strips trailing separators.
-    """
-    ancestor = os.path.normcase(os.path.normpath(ancestor))
-    descendant = os.path.normcase(os.path.normpath(descendant))
-    return (descendant + os.sep).startswith(ancestor + os.sep)
-
 #}
 #{ Processing Pipeline
 
