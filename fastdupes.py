@@ -331,8 +331,9 @@ def groupByContent(paths):
     @param paths: List of potentially identical files.
     @type paths: iterable
 
-    @returns: List of lists containing identical files.
-    @rtype: C{list}
+    @returns: A dict mapping one path to a list of all paths (self included)
+              with the same contents.
+    @rtype: C{dict}
 
     @todo: Start examining the C{while handles:} block to figure out how to
         minimize thrashing in situations where read-ahead caching is active.
