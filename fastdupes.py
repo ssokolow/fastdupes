@@ -37,7 +37,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 
 __appname__ = "Find Dupes Fast"
-__author__  = "Stephan Sokolow (deitarion/SSokolow)"
+__author__ = "Stephan Sokolow (deitarion/SSokolow)"
 __version__ = "0.3.6"
 __license__ = "GNU GPL 2.0 or later"
 
@@ -56,7 +56,7 @@ DEFAULTS = {
     'min_size': 25,  # Only check files this big or bigger.
 }
 CHUNK_SIZE = 2 ** 16  #: Size for chunked reads from file handles
-HEAD_SIZE  = 2 ** 14  #: Limit how many bytes will be read to compare headers
+HEAD_SIZE = 2 ** 14  #: Limit how many bytes will be read to compare headers
 
 #{ General Helper Functions
 
@@ -101,7 +101,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
 
     return want_hex and fhash.hexdigest() or fhash.digest()
 
-class OverWriter(object):
+class OverWriter(object):  # pylint: disable=too-few-public-methods
     """Output helper for handling overdrawing the previous line cleanly."""
     def __init__(self, fobj):
         self.max_len = 0
@@ -154,7 +154,8 @@ def getPaths(roots, ignores=None):
     # for pat in ignores:
     #    if '*' in pat or '?' in pat or '[' in pat:
     #        pats.append(re.compile(fnmatch.translate(pat)))
-    #    elif pat.startswith(os.sep) or os.altsep and pat.startswith(os.altsep):
+    #    elif (pat.startswith(os.sep) or os.altsep and
+    #          pat.startswith(os.altsep)):
     #        abs_pats.append(pat)
     #    else:
     #        frag_pats.append(pat)
