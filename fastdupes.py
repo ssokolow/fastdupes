@@ -134,8 +134,18 @@ class OverWriter(object):  # pylint: disable=too-few-public-methods
             self.fobj.write('\n')
             self.max_len = 0
 
-
 out = OverWriter(sys.stderr)
+
+def path_is_descendant(ancestor, descendant):
+    """Check whether a given path is a descendant of another given path.
+
+    @note: You can't just use C{startswith()} without adding C{os.sep} because,
+           without it, you'll match siblings with a common prefix and
+           normalization strips trailing separators.
+    """
+    ancestor = os.path.normcase(os.path.normpath(ancestor))
+    descendant = os.path.normcase(os.path.normpath(descendant))
+    return (descendant + os.sep).startswith(ancestor + os.sep)
 
 #}
 #{ Processing Pipeline
@@ -395,6 +405,28 @@ def compareChunks(handles, chunkSize=CHUNK_SIZE):
 #}
 #{ User Interface
 
+def prefer_filter(paths, prefer_list):
+    """Divide a list of paths by whether they match any of a list of prefixes.
+
+    @param paths: Paths to be divided up
+    @param prefer_list: Prefixes to be used for division
+
+    @type paths: C{[str]}
+    @type prefer_list: C{[str]}
+
+    @returns: C{(preferred, rejected)}
+    @rtype: C{(list, list)}
+    """
+    preferred, rejected = [], []
+
+    for path in paths:
+        if any(x for x in prefer_list if path_is_descendant(x, path)):
+            preferred.append(path)
+        else:
+            rejected.append(path)
+
+    return preferred, rejected
+
 def pruneUI(dupeList, mainPos=1, mainLen=1):
     """Display a list of files and prompt for ones to be kept.
 
@@ -444,8 +476,6 @@ def main():
     parser.add_option('-D', '--defaults', action="store_true", dest="defaults",
         default=False, help="Display the default values for options which take"
         " arguments and then exit.")
-    parser.add_option('-d', '--delete', action="store_true", dest="delete",
-        help="Prompt the user for files to preserve and delete all others.")
     parser.add_option('-E', '--exact', action="store_true", dest="exact",
         default=False, help="There is a vanishingly small chance of false"
         " positives when comparing files using sizes and hashes. This option"
@@ -465,6 +495,23 @@ def main():
         dest="min_size", metavar="X", help="Specify a non-default minimum size"
         ". Files below this size (default: %default bytes) will be ignored.")
     parser.add_option_group(filter_group)
+
+    behaviour_group = OptionGroup(parser, "Output Behaviour")
+    behaviour_group.add_option('-d', '--delete', action="store_true",
+        dest="delete", help="Prompt the user for files to preserve and delete "
+                            "all others.")
+    behaviour_group.add_option('--dry-run', action="store_true",
+        dest="dry_run", metavar="PREFIX", help="Don't actually delete any "
+        "files. Just list what actions would be performed. (Good for testing "
+        "values for --prefer)")
+    behaviour_group.add_option('--prefer', action="append", dest="prefer",
+        metavar="PATH", default=[], help="Specify a directory within which "
+        "--delete should automatically prefer (rather than prompting) when it "
+        "occurs in a list of duplicates.")
+    behaviour_group.add_option('--noninteractive', action="store_true",
+        dest="noninteractive", help="When using --delete, automatically assume"
+        " 'all' for any groups with no --prefer matches rather than prompting")
+    parser.add_option_group(behaviour_group)
     parser.set_defaults(**DEFAULTS)  # pylint: disable=W0142
 
     opts, args = parser.parse_args()
@@ -496,12 +543,25 @@ def main():
     else:
         groups = groupBy(groups, hashClassifier, fun_desc='hashes')
 
+    prefer_list = [os.path.abspath(x) for x in opts.prefer]
+    # TODO: Display a warning if any of these don't exist
+
     if opts.delete:
-        for pos, val in enumerate(groups.values()):
+        for pos, group in enumerate(groups.values()):
             # TODO: Add a secondary check for symlinks for safety.
-            pruneList = pruneUI(val, pos + 1, len(groups))
+            preferred, pruneList = prefer_filter(group, prefer_list)
+            if not preferred:
+                if opts.noninteractive:
+                    preferred, pruneList = pruneList, []
+                else:
+                    pruneList = pruneUI(group, pos + 1, len(groups))
+                    preferred = [x for x in group if x not in pruneList]
+
+            assert preferred  # Safety check
             for path in pruneList:
-                os.remove(path)
+                print "Removing %s" % path
+                if not opts.dry_run:
+                    os.remove(path)
     else:
         for dupeSet in groups.values():
             for filename in dupeSet:
