@@ -21,13 +21,13 @@ It was originally inspired by Dave Bolton's `dedupe.py`_ and Reasonable
 Software's `NoClone`_ and has no external dependencies beyond the Python 2.x
 standard library.
 
-Full API documentation is available via `ePyDoc`_ and, pending proper end user
-documentation, the :option:`--help` option is being constantly improved.
+Full API documentation is available on ReadTheDocs and, `pending proper end user
+documentation <https://github.com/ssokolow/fastdupes/issues/24>`_, the
+:option:`--help` option is being constantly improved.
 
 .. _fdupes: https://packages.debian.org/stable/fdupes
 .. _dedupe.py: http://davebolton.net/blog/?p=173
 .. _NoClone: http://noclone.net/
-.. _ePyDoc: http://epydoc.sourceforge.net/
 
 Algorithm
 =========

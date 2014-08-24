@@ -26,6 +26,9 @@ more quickly than fdupes by using smarter algorithms.
     You should have received a copy of the GNU General Public License
     along with this program; if not, see <http://www.gnu.org/licenses/>.
 
+.. todo:: Figure out how to do ePyDoc-style grouping here without giving up
+          automodule-level comfort.
+
 .. default-domain:: py
 """
 
@@ -413,8 +416,8 @@ def compareChunks(handles, chunk_size=CHUNK_SIZE):
 
     return more, done
 
-#}
-#{ User Interface
+# }}}
+# {{{ User Interface
 
 def pruneUI(dupeList, mainPos=1, mainLen=1):
     """Display a list of files and prompt for ones to be kept.
@@ -454,7 +457,7 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
             print("Invalid choice. Please enter a space/comma-separated list"
                   "of numbers or 'all'.")
 
-#}
+# }}}
 
 def find_dupes(paths, exact=False, ignores=None, min_size=0):
     """High-level code to walk a set of paths and find duplicate groups.
