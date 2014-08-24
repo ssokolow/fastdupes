@@ -7,32 +7,26 @@ By Stephan Sokolow (ssokolow.com)
 A simple script which identifies duplicate files several orders of magnitude
 more quickly than fdupes by using smarter algorithms.
 
---snip--
+----
 
-@todo:
- - Once ready, announce this in a comment at
-   U{http://ubuntu.wordpress.com/2005/10/08/find-duplicate-copies-of-files/}
- - Look into possible solutions for pathological cases of thousands of files
-   with the same size and same pre-filter results. (File handle exhaustion)
- - Run this through a memory profiler and look for obvious bloat to trim.
- - Look into supporting gettext localization.
+.. only:: draft
 
-@newfield appname:Application Name
+    Copyright (C) 2009-2014 Stephan Sokolow
 
-Copyright (C) 2009-2014 Stephan Sokolow
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, see <http://www.gnu.org/licenses/>.
+.. default-domain:: py
 """
 
 
@@ -49,16 +43,16 @@ from functools import wraps
 # reduced potential for hash collisions that SHA1's greater hash size offers.
 import hashlib
 
-#: Default settings used by C{optparse} and some functions
+#: Default settings used by :mod:`optparse` and some functions
 DEFAULTS = {
     'delete': False,
     'exclude': ['*/.svn', '*/.bzr', '*/.git', '*/.hg'],
-    'min_size': 25,  # Only check files this big or bigger.
+    'min_size': 25,  #: Only check files this big or bigger.
 }
 CHUNK_SIZE = 2 ** 16  #: Size for chunked reads from file handles
 HEAD_SIZE = 2 ** 14  #: Limit how many bytes will be read to compare headers
 
-#{ General Helper Functions
+# {{{ General Helper Functions
 
 # We need os.lstat so we can skip symlinks, but we want Windows portability too
 try:
@@ -69,13 +63,14 @@ except AttributeError:
 def multiglob_compile(globs, prefix=False):
     """Generate a single "A or B or C" regex from a list of shell globs.
 
-    @param globs: An iterable of strings to be processed by C{fnmatch}.
-    @param prefix: If C{True}, then C{match()} will perform prefix matching
-                   rather than exact string matching.
-    @type globs: iterable of C{str}
-    @type prefix: C{bool}
+    :param globs: Patterns to be processed by :mod:`fnmatch`.
+    :type globs: iterable of :class:`~__builtins__.str`
 
-    @todo: Also use this for excludes.
+    :param prefix: If ``True``, then :meth:`~re.RegexObject.match` will
+        perform prefix matching rather than exact string matching.
+    :type prefix: :class:`~__builtins__.bool`
+
+    :rtype: :class:`re.RegexObject`
     """
     if not globs:
         # An empty globs list should only match empty strings
@@ -85,23 +80,27 @@ def multiglob_compile(globs, prefix=False):
     return re.compile('|'.join(fnmatch.translate(x) for x in globs))
 
 def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
-    """Generate an SHA1 hash for a potentially long file.
-    Digesting will obey L{CHUNK_SIZE} to conserve memory.
+    """Generate a hash from a potentially long file.
+    Digesting will obey :const:`CHUNK_SIZE` to conserve memory.
 
-    @param handle: A file-like object or path to hash from.
-    @param want_hex: If true, the returned hash will be hex-encoded.
-    @param limit: The maximum number of bytes to read (will be rounded up to
-        a multiple of C{CHUNK_SIZE})
-    @param chunk_size: Size of C{read()} operations in bytes.
+    .. param handle:: A file-like object or path to hash from.
+    :param want_hex: If ``True``, returned hash will be hex-encoded.
+    :type want_hex: :class:`~__builtins__.bool`
 
-    @type want_hex: C{bool}
-    @type limit: C{int}
-    @type chunk_size: C{int}
+    :param limit: Maximum number of bytes to read (rounded up to a multiple of
+        ``CHUNK_SIZE``)
+    :type limit: :class:`~__builtins__.int`
 
-    @rtype: C{str}
-    @returns: A binary or hex-encoded SHA1 hash.
+    :param chunk_size: Size of :meth:`~__builtins__.file.read` operations
+        in bytes.
+    :type chunk_size: :class:`~__builtins__.int`
 
-    @note: It is your responsibility to close any file-like objects you pass in
+
+    :rtype: :class:`~__builtins__.str`
+    :returns: A binary or hex-encoded SHA1 hash.
+
+    .. note:: It is your responsibility to close any file-like objects you pass
+        in
     """
     fhash, read = hashlib.sha1(), 0
     if isinstance(handle, basestring):
@@ -130,15 +129,15 @@ class OverWriter(object):  # pylint: disable=too-few-public-methods
             self.isatty = os.isatty(self.fobj.fileno())
 
     def write(self, text, newline=False):
-        """Use CR to overdraw the current line with the given text.
+        """Use ``\\r`` to overdraw the current line with the given text.
 
         This function transparently handles tracking how much overdrawing is
         necessary to erase the previous line when used consistently.
 
-        @param text: The text to be outputted
-        @param newline: Whether to start a new line and reset the length count.
-        @type text: C{str}
-        @type newline: C{bool}
+        :param text: The text to be outputted
+        :param newline: Whether to start a new line and reset the length count.
+        :type text: :class:`~__builtins__.str`
+        :type newline: :class:`~__builtins__.bool`
         """
         if not self.isatty:
             self.fobj.write('%s\n' % text)
@@ -154,24 +153,26 @@ class OverWriter(object):  # pylint: disable=too-few-public-methods
 
 out = OverWriter(sys.stderr)
 
-#}
-#{ Processing Pipeline
+# }}}
+# {{{ Processing Pipeline
 
 def getPaths(roots, ignores=None):
     """
-    Convert a list of paths containing directories into a list of absolute file
-    paths.
+    Recursively walk a set of paths and return a listing of contained files.
 
-    @param roots: Files and folders to walk.
-    @param ignores: A list of shell globs to avoid walking and omit from
-                    results.
+    :param roots: Relative or absolute paths to files or folders.
+    :type roots: :class:`~__builtins__.list` of :class:`~__builtins__.str`
 
-    @returns: List of paths containing only files.
-    @rtype: C{list}
+    :param ignores: A list of :py:mod:`fnmatch` globs to avoid walking and
+        omit from results
+    :type ignores: :class:`~__builtins__.list` of :class:`~__builtins__.str`
 
-    @todo: Try to optimize the ignores matching. Running a regex on every
-    filename is a fairly significant percentage of the time taken according to
-    the profiler.
+    :returns: Absolute paths to only files.
+    :rtype: :class:`~__builtins__.list` of :class:`~__builtins__.str`
+
+    .. todo:: Try to optimize the ignores matching. Running a regex on every
+       filename is a fairly significant percentage of the time taken according
+       to the profiler.
     """
     paths, count, ignores = [], 0, ignores or []
 
@@ -214,25 +215,30 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
             *args, **kwargs):
     """Subdivide groups of paths according to a function.
 
-    @param groups_in: Groups of path lists.
-    @param classifier: Function which takes an iterable of paths, C{*args} and
-        C{**kwargs} and subdivides the iterable, returning a dict mapping keys
-        to new groups.
-    @param fun_desc: Human-readable term for what paths are being grouped
-        by for use in log messages.
-    @param keep_uniques: If false, discard groups with only one member.
+    :param groups_in: Grouped sets of paths.
+    :type groups_in: :class:`~__builtins__.dict` of iterables
 
-    @type groups_in: C{dict} of iterables
-    @type classifier: C{function(str, dict)}
-    @type fun_desc: C{str}
-    @type keep_uniques: C{bool}
+    :param classifier: Function to group a list of paths by some attribute.
+    :type classifier: ``function(list, *args, **kwargs) -> str``
 
-    @returns: A dict mapping sizes to lists of paths.
-    @rtype: C{dict}
+    :param fun_desc: Human-readable term for what the classifier operates on.
+        (Used in log messages)
+    :type fun_desc: :class:`~__builtins__.str`
 
-    @attention: Grouping functions generally use a C{set} for C{groups} as
-        extra protection against accidentally counting a given file twice.
-        (Complimentary to C{os.path.realpath()} in L{getPaths})
+    :param keep_uniques: If ``False``, discard groups with only one member.
+    :type keep_uniques: :class:`~__builtins__.bool`
+
+
+    :returns: A dict mapping classifier keys to groups of matches.
+    :rtype: :class:`~__builtins__.dict`
+
+
+    :attention: Grouping functions generally use a :class:`~__builtins__.set`
+        ``groups`` as extra protection against accidentally counting a given
+        file twice. (Complimentary to use of :func:`os.path.realpath` in
+        :func:`~fastdupes.getPaths`)
+
+    .. todo:: Find some way to bring back the file-by-file status text
     """
     groups, count, group_count = {}, 0, len(groups_in)
     for pos, paths in enumerate(groups_in.values()):
@@ -241,7 +247,6 @@ def groupBy(groups_in, classifier, fun_desc='?', keep_uniques=False,
                       pos + 1, group_count, fun_desc, count, len(paths)
                   ))
 
-        # TODO: Find some way to bring back the file-by-file status text
         for key, group in classifier(paths, *args, **kwargs).items():
             groups.setdefault(key, set()).update(group)
             count += len(group)
@@ -259,12 +264,17 @@ def groupify(function):
     a key into one which takes a list of values and returns a dict of key-group
     mappings.
 
-    @returns: A dict mapping keys to groups of values.
-    @rtype: C{{object: set(), ...}}
+    :param function: A function which takes a value and returns a hash key.
+    :type function: ``function(value) -> key``
+
+    :rtype:
+        .. parsed-literal::
+            function(iterable) ->
+                {key: :class:`~__builtins__.set` ([value, ...]), ...}
     """
 
     @wraps(function)
-    def wrapper(paths, *args, **kwargs):
+    def wrapper(paths, *args, **kwargs):  # pylint: disable=missing-docstring
         groups = {}
 
         for path in paths:
@@ -279,17 +289,16 @@ def groupify(function):
 def sizeClassifier(path, min_size=DEFAULTS['min_size']):
     """Sort a file into a group based on on-disk size.
 
-    @param path: The path to the file.
-    @param min_size: Files smaller than this size (in bytes) will be ignored.
+    :param paths: See :func:`fastdupes.groupify`
 
-    @type path: C{str}
-    @type min_size: C{int}
+    :param min_size: Files smaller than this size (in bytes) will be ignored.
+    :type min_size: :class:`__builtins__.int`
 
-    @returns: The file size for use as a hash bucket ID.
-    @rtype: C{int}
+    :returns: See :func:`fastdupes.groupify`
 
-    @todo: Rework the calling of stat() to minimize the number of calls. It's a
-    fairly significant percentage of the time taken according to the profiler.
+    .. todo:: Rework the calling of :func:`~os.stat` to minimize the number of
+        calls. It's a fairly significant percentage of the time taken according
+        to the profiler.
     """
     filestat = _stat(path)
     if stat.S_ISLNK(filestat.st_mode):
@@ -304,16 +313,13 @@ def sizeClassifier(path, min_size=DEFAULTS['min_size']):
 def hashClassifier(path, limit=HEAD_SIZE):
     """Sort a file into a group based on its SHA1 hash.
 
-    @param path: The path to the file.
-    @param limit: Only this many bytes will be counted in the hash.
-        Values which evaluate boolean False indicate no limit.
+    :param paths: See :func:`fastdupes.groupify`
 
-    @type path: C{str}
-    @type limit: C{int}
+    :param limit: Only this many bytes will be counted in the hash.
+        Values which evaluate to ``False`` indicate no limit.
+    :type limit: :class:`__builtins__.int`
 
-    @returns: The file's hash for use as a hash bucket ID.
-    @rtype: C{str}
-
+    :returns: See :func:`fastdupes.groupify`
     """
     return hashFile(path, limit=limit)
 
@@ -322,21 +328,25 @@ def groupByContent(paths):
 
     This operates by opening all files in parallel and comparing
     chunk-by-chunk. This has the following implications:
+
         - Reads the same total amount of data as hash comparison.
-        - Performs a I{lot} of disk seeks. (Best suited for SSDs)
+        - Performs a *lot* of disk seeks. (Best suited for SSDs)
         - Vulnerable to file handle exhaustion if used on its own.
 
-    @param paths: List of potentially identical files.
-    @type paths: iterable
+    :param paths: List of potentially identical files.
+    :type paths: iterable
 
-    @returns: A dict mapping one path to a list of all paths (self included)
+    :returns: A dict mapping one path to a list of all paths (self included)
               with the same contents.
-    @rtype: C{dict}
 
-    @todo: Start examining the C{while handles:} block to figure out how to
+    .. todo:: Start examining the ``while handles:`` block to figure out how to
         minimize thrashing in situations where read-ahead caching is active.
         Compare savings by read-ahead to savings due to eliminating false
         positives as quickly as possible. This is a 2-variable min/max problem.
+
+    .. todo:: Look into possible solutions for pathological cases of thousands
+        of files with the same size and same pre-filter results. (File handle
+        exhaustion)
     """
     handles, results = [], []
 
@@ -360,25 +370,27 @@ def groupByContent(paths):
     # Keep the same API as the others.
     return dict((x[0], x) for x in results)
 
-def compareChunks(handles, chunkSize=CHUNK_SIZE):
+def compareChunks(handles, chunk_size=CHUNK_SIZE):
     """Group a list of file handles based on equality of the next chunk of
     data read from them.
 
-    @param handles: A list of open handles for file-like objects with
-        potentially-identical contents.
-    @param chunkSize: The amount of data to read from each handle every time
+    :param handles: A list of open handles for file-like objects with
+        otentially-identical contents.
+    :param chunk_size: The amount of data to read from each handle every time
         this function is called.
 
-    @returns: Two lists of lists:
-     - One containing more lists to be fed back into this function individually
-     - One containing finished groups of duplicate paths. (includes unique
-       files as single-file lists)
-    @rtype: C{(list, list)}
+    :returns: Two lists of lists:
 
-    @attention: File handles will be automatically-closed when no longer needed
-    @todo: Discard the chunk contents immediately once they're no longer needed
+        * Lists to be fed back into this function individually
+        * Finished groups of duplicate paths. (including unique files as
+          single-file lists)
+
+    :rtype: ``(list, list)``
+
+    .. attention:: File handles will be closed when no longer needed
+    .. todo:: Discard chunk contents immediately once they're no longer needed
     """
-    chunks = [(path, fh, fh.read(chunkSize)) for path, fh, _ in handles]
+    chunks = [(path, fh, fh.read(chunk_size)) for path, fh, _ in handles]
     more, done = [], []
 
     # While there are combinations not yet tried...
@@ -407,21 +419,21 @@ def compareChunks(handles, chunkSize=CHUNK_SIZE):
 def pruneUI(dupeList, mainPos=1, mainLen=1):
     """Display a list of files and prompt for ones to be kept.
 
-    The user may enter "all" or one or more numbers separated by spaces and/or
-    commas.
+    The user may enter ``all`` or one or more numbers separated by spaces
+    and/or commas.
 
-    @note: It is impossible to accidentally choose to keep none of the
+    .. note:: It is impossible to accidentally choose to keep none of the
         displayed files.
 
-    @param dupeList: A list duplicate file paths
-    @param mainPos: Used to display "set X of Y"
-    @param mainLen: Used to display "set X of Y"
-    @type dupeList: C{list}
-    @type mainPos: C{int}
-    @type mainLen: C{int}
+    :param dupeList: A list duplicate file paths
+    :param mainPos: Used to display "set X of Y"
+    :param mainLen: Used to display "set X of Y"
+    :type dupeList: :class:`~__builtins__.list`
+    :type mainPos: :class:`~__builtins__.int`
+    :type mainLen: :class:`~__builtins__.int`
 
-    @returns: A list of files to be deleted.
-    @rtype: C{list}
+    :returns: A list of files to be deleted.
+    :rtype: :class:`~__builtins__.int`
     """
     dupeList = sorted(dupeList)
     print
@@ -447,12 +459,17 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
 def find_dupes(paths, exact=False, ignores=None, min_size=0):
     """High-level code to walk a set of paths and find duplicate groups.
 
-    @param exact: Whether to compare file contents by hash or by reading
+    :param exact: Whether to compare file contents by hash or by reading
                   chunks in parallel.
+    :type exact: :class:`~__builtins__.bool`
 
-    See L{getPaths} and L{sizeClassifier} for more argument documentation.
+    :param paths: See :meth:`~fastdupes.getPaths`
+    :param ignores: See :meth:`~fastdupes.getPaths`
+    :param min_size: See :meth:`~fastdupes.sizeClassifier`
 
-    @returns: A list of lists representing du"""
+    :returns: A list of groups of files with identical contents
+    :rtype: ``[[path, ...], [path, ...]]``
+    """
     groups = {'': getPaths(paths, ignores)}
     groups = groupBy(groups, sizeClassifier, 'sizes', min_size=min_size)
 
@@ -469,7 +486,7 @@ def find_dupes(paths, exact=False, ignores=None, min_size=0):
     return groups
 
 def print_defaults():
-    """Display the default values for all command-line options"""
+    """Pretty-print the contents of :data:`DEFAULTS`"""
     maxlen = max([len(x) for x in DEFAULTS])
     for key in DEFAULTS:
         value = DEFAULTS[key]
@@ -478,12 +495,27 @@ def print_defaults():
         print "%*s: %s" % (maxlen, key, value)
 
 def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
-    """Code to handle the --delete command-line option."""
+    """Code to handle the :option:`--delete` command-line option.
+
+    :param groups: A list of groups of paths.
+    :type groups: iterable
+
+    :param prefer_list: A whitelist to be compiled by
+        :func:`~fastdupes.multiglob_compile` and used to skip some prompts.
+
+    :param interactive: If ``False``, assume the user wants to keep all copies
+        when a prompt would otherwise be displayed.
+    :type interactive: :class:`~__builtins__.bool`
+
+    :param dry_run: If ``True``, only pretend to delete files.
+    :type dry_run: :class:`~__builtins__.bool`
+
+    .. todo:: Add a secondary check for symlinks for safety.
+    """
     prefer_list = prefer_list or []
     prefer_re = multiglob_compile(prefer_list, prefix=True)
 
     for pos, group in enumerate(groups.values()):
-        # TODO: Add a secondary check for symlinks for safety.
         preferred = [x for x in group if prefer_re.match(x)]
         pruneList = [x for x in group if x not in preferred]
         if not preferred:
@@ -500,7 +532,7 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
                 os.remove(path)
 
 def main():
-    """The main entry point, compatible with setuptools entry points."""
+    """The main entry point, compatible with setuptools."""
     # pylint: disable=bad-continuation
     from optparse import OptionParser, OptionGroup
     parser = OptionParser(usage="%prog [options] <folder path> ...",
