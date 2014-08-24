@@ -1,9 +1,12 @@
 .. image:: https://landscape.io/github/ssokolow/fastdupes/master/landscape.png
    :target: https://landscape.io/github/ssokolow/fastdupes/master
    :alt: Code Health
+.. image:: https://readthedocs.org/projects/fastdupes/badge/?version=latest
+   :target: https://readthedocs.org/projects/fastdupes/?badge=latest
+   :alt: Documentation Status
 .. image:: https://badge.waffle.io/ssokolow/fastdupes.svg?label=ready&title=Ready
- :target: https://waffle.io/ssokolow/fastdupes
- :alt: 'Stories in Ready'
+   :target: https://waffle.io/ssokolow/fastdupes
+   :alt: 'Stories in Ready'
 
 Find Dupes Fast (A.K.A. ``fastdupes.py``) is a simple script which identifies
 duplicate files several orders of magnitude more quickly than
