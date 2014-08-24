@@ -86,7 +86,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     """Generate a hash from a potentially long file.
     Digesting will obey :const:`CHUNK_SIZE` to conserve memory.
 
-    .. param handle:: A file-like object or path to hash from.
+    :param handle: A file-like object or path to hash from.
     :param want_hex: If ``True``, returned hash will be hex-encoded.
     :type want_hex: :class:`~__builtins__.bool`
 
