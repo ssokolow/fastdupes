@@ -1,19 +1,11 @@
-.. raw:: html
+.. image:: https://landscape.io/github/ssokolow/fastdupes/master/landscape.png
+   :target: https://landscape.io/github/ssokolow/fastdupes/master
+   :alt: Code Health
+.. image:: https://badge.waffle.io/ssokolow/fastdupes.svg?label=ready&title=Ready
+ :target: https://waffle.io/ssokolow/fastdupes
+ :alt: 'Stories in Ready'
 
- <p>
-  <a href="https://landscape.io/github/ssokolow/fastdupes/master"
-      title="Code Health">
-    <img
-     src="https://landscape.io/github/ssokolow/fastdupes/master/landscape.png"
-     alt="Code Health" /></a>
-  <a href="https://waffle.io/ssokolow/fastdupes"
-     title="Issues ready to be worked on">
-   <img
-    src="https://badge.waffle.io/ssokolow/fastdupes.svg?label=ready&title=Ready"
-    alt="Issues ready to be worked on" /></a>
- </p>
-
-Find Dupes Fast (A.K.A. :file:`fastdupes.py`) is a simple script which identifies
+Find Dupes Fast (A.K.A. ``fastdupes.py``) is a simple script which identifies
 duplicate files several orders of magnitude more quickly than
 `fdupes`_ by using smarter algorithms.
 
@@ -23,7 +15,7 @@ standard library.
 
 Full API documentation is available on ReadTheDocs and, `pending proper end user
 documentation <https://github.com/ssokolow/fastdupes/issues/24>`_, the
-:option:`--help` option is being constantly improved.
+``--help`` option is being constantly improved.
 
 .. _fdupes: https://packages.debian.org/stable/fdupes
 .. _dedupe.py: http://davebolton.net/blog/?p=173
@@ -34,10 +26,10 @@ Algorithm
 
 The default mode of operation is as follows:
 
-1. The given paths are recursively walked (subject to :option:`--exclude`) to
+1. The given paths are recursively walked (subject to ``--exclude``) to
    gather a list of files.
-2. Files are grouped by size (because :py:func:`~os.stat` is fast compared to
-   :py:meth:`~__builtins__.file.read`)
+2. Files are grouped by size (because ``stat()`` is fast compared to
+   ``read()``)
    and single-entry groups are pruned away.
 3. Groups are subdivided and pruned by hashing the first ``16KiB`` of each
    file.
@@ -68,7 +60,7 @@ into memory.
 Exact Comparison Mode
 =====================
 
-If the :option:`-E` switch is provided on the command line, the final full-content SHA1
+If the ``-E`` switch is provided on the command line, the final full-content SHA1
 hashing will be omitted. Instead, all of the files in each group will be read
 from the disk in parallel, comparing chunk-by-chunk and subdividing the group
 as differences appear.
@@ -89,7 +81,7 @@ possible... but only an astronomically small number of the possible
 combinations of bytes are meaningful data that you'd find in a file on your
 hard drive.)
 
-The :option:`--delete` option
+The ``--delete`` option
 =============================
 
 Like fdupes, fastdupes.py provides a ``--delete`` option which produces
@@ -99,18 +91,18 @@ However, unlike with fdupes, these prompts make it impossible to accidentally
 delete every copy of a file. (Bugs excepted, of course. A full unit test suite
 to ensure this behaviour is still on the TODO list.)
 
-* The :option:`--delete` UI asks you which files you'd like to *keep* and won't
+* The ``--delete`` UI asks you which files you'd like to *keep* and won't
   accept an empty response.
 * Specifying a directory more than once on the command line will not result in
   a file being listed as a duplicate of itself. Nor will specifying a directory
   and its ancestor.
-* A :option:`--symlinks` option will not be added until safety can be
+* A ``--symlinks`` option will not be added until safety can be
   guaranteed.
 
-The :option:`--prefer` and :option:`--noninteractive` options
+The ``--prefer`` and ``--noninteractive`` options
 -------------------------------------------------------------
 
-Often, when deduplicating with :option:`--delete`, you already know that files
+Often, when deduplicating with ``--delete``, you already know that files
 in one directory tree should be preferred over files in another.
 
 For example, if you have a folder named ``To Burn`` and another named
@@ -121,9 +113,9 @@ By specifying ``--prefer=*/Burned`` on the command-line, you can skip the
 prompts in such a situation while still receiving prompts for other files.
 
 Furthermore, if you'd like a fully unattended deduplication run, include the
-:option:`--noninteractive` option and fastdupes will assume that you want to
+``--noninteractive`` option and fastdupes will assume that you want to
 keep all copies (do nothing) when it would otherwise prompt.
 
-Finally, a :option:`--dry-run` option is provided in case you need to test the
-effects of a :option:`--delete` setup without risk to your files.
+Finally, a ``--dry-run`` option is provided in case you need to test the
+effects of a ``--delete`` setup without risk to your files.
 
