@@ -497,7 +497,8 @@ def print_defaults():
             value = ', '.join(value)
         print "%*s: %s" % (maxlen, key, value)
 
-def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
+def delete_dupes(groups, prefer_list=None, remember=False, interactive=True,
+                 dry_run=False):
     """Code to handle the :option:`--delete` command-line option.
 
     :param groups: A list of groups of paths.
@@ -517,12 +518,26 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
     """
     prefer_list = prefer_list or []
     prefer_re = multiglob_compile(prefer_list, prefix=True)
+    remem_dict = {}
 
     for pos, group in enumerate(groups.values()):
         preferred = [x for x in group if prefer_re.match(x)]
         pruneList = [x for x in group if x not in preferred]
         if not preferred:
-            if interactive:
+            if remember:
+                default = ""
+	        dupeList = sorted(group)
+                dupeDirs = repr(map(os.path.dirname, dupeList))
+                if dupeDirs in remem_dict:
+                    choice = remem_dict[dupeDirs]
+                    out = [int(x) - 1 for x in choice.split()]
+                    pruneList = [val for pos, val in enumerate(dupeList) if pos not in out]
+                else:
+                    pruneList = pruneUI(dupeList, pos + 1, len(groups))
+		    default_new = [str(pos+1) for pos, val in enumerate(dupeList) if val not in pruneList]
+                    remem_dict[dupeDirs] = " ".join(default_new)
+                preferred = [x for x in dupeList if x not in pruneList]
+            elif interactive:
                 pruneList = pruneUI(group, pos + 1, len(groups))
                 preferred = [x for x in group if x not in pruneList]
             else:
@@ -575,6 +590,9 @@ def main():
         metavar="PATH", default=[], help="Append a globbing pattern which "
         "--delete should automatically prefer (rather than prompting) when it "
         "occurs in a list of duplicates.")
+    behaviour_group.add_option('--remember', action="store_true",
+        dest="remember", metavar="REMEMBER", help="Remember choices "
+        "and automatically apply them if the same set of directories repeats.")
     behaviour_group.add_option('--noninteractive', action="store_true",
         dest="noninteractive", help="When using --delete, automatically assume"
         " 'all' for any groups with no --prefer matches rather than prompting")
@@ -595,7 +613,7 @@ def main():
     groups = find_dupes(args, opts.exact, opts.exclude, opts.min_size)
 
     if opts.delete:
-        delete_dupes(groups, opts.prefer, not opts.noninteractive,
+        delete_dupes(groups, opts.prefer, opts.remember, not opts.noninteractive,
                      opts.dry_run)
     else:
         for dupeSet in groups.values():
