@@ -17,7 +17,7 @@ Software's `NoClone`_ and has no external dependencies beyond the Python 2.x
 standard library.
 
 Full `API documentation
-<https://readthedocs.org/projects/fastdupes/?badge=latest>`_ is available on
+<http://fastdupes.readthedocs.org/en/latest/apidocs.html>`_ is available on
 ReadTheDocs and, `pending <https://github.com/ssokolow/fastdupes/issues/24>`_
 proper end user documentation, the ``--help`` option is being constantly
 improved.
