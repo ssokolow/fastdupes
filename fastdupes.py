@@ -41,6 +41,9 @@ __license__ = "GNU GPL 2.0 or later"
 import fnmatch, os, re, stat, sys
 from functools import wraps
 
+import logging
+log = logging.getLogger(__name__)
+
 # Note: In my `python -m timeit` tests, the difference between MD5 and SHA1 was
 # negligible, so there is no meaningful reason not to take advantage of the
 # reduced potential for hash collisions that SHA1's greater hash size offers.
@@ -281,9 +284,13 @@ def groupify(function):
         groups = {}
 
         for path in paths:
-            key = function(path, *args, **kwargs)
-            if key is not None:
-                groups.setdefault(key, set()).add(path)
+            try:
+                key = function(path, *args, **kwargs)
+                if key is not None:
+                    groups.setdefault(key, set()).add(path)
+            except (OSError, IOError) as err:
+                log.error("Cannot process %s: %s", path, err)
+                continue
 
         return groups
     return wrapper
@@ -358,8 +365,8 @@ def groupByContent(paths):
     for path in paths:
         try:
             hList.append((path, open(path, 'rb'), ''))
-        except IOError:
-            pass  # TODO: Verbose-mode output here.
+        except (OSError, IOError) as err:
+            log.error("Cannot process %s (removed?): %s", path, err)
     handles.append(hList)
 
     while handles:
@@ -530,7 +537,7 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
 
         assert preferred  # Safety check
         for path in pruneList:
-            print "Removing %s" % path
+            log.info("Removing %s", path)
             if not dry_run:
                 os.remove(path)
 
@@ -550,7 +557,10 @@ def main():
         " of disk seeks, so, on traditional moving-platter media, this trades"
         " a LOT of performance for a very tiny amount of safety most people"
         " don't need.")
-    # XXX: Should I add --verbose and/or --quiet?
+    parser.add_option('-v', '--verbose', action="count", dest="verbose",
+        default=2, help="Increase the verbosity. Use twice for extra effect")
+    parser.add_option('-q', '--quiet', action="count", dest="quiet",
+        default=0, help="Decrease the verbosity. Use twice for extra effect")
 
     filter_group = OptionGroup(parser, "Input Filtering")
     filter_group.add_option('-e', '--exclude', action="append", dest="exclude",
@@ -582,6 +592,14 @@ def main():
     parser.set_defaults(**DEFAULTS)  # pylint: disable=W0142
 
     opts, args = parser.parse_args()
+
+    # Set up clean logging to stderr
+    log_levels = [logging.CRITICAL, logging.ERROR, logging.WARNING,
+                  logging.INFO, logging.DEBUG]
+    opts.verbose = min(opts.verbose - opts.quiet, len(log_levels) - 1)
+    opts.verbose = max(opts.verbose, 0)
+    logging.basicConfig(level=log_levels[opts.verbose],
+                        format='%(levelname)s: %(message)s')
 
     if '-' in opts.exclude:
         opts.exclude = opts.exclude[opts.exclude.index('-') + 1:]
