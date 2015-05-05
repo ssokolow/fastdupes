@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Find Dupes Fast
@@ -32,6 +32,8 @@ more quickly than fdupes by using smarter algorithms.
 .. default-domain:: py
 """
 
+from __future__ import (absolute_import, division, print_function,
+                        with_statement, unicode_literals)
 
 __appname__ = "Find Dupes Fast"
 __author__ = "Stephan Sokolow (deitarion/SSokolow)"
@@ -446,14 +448,14 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
     :rtype: :class:`~__builtins__.int`
     """
     dupeList = sorted(dupeList)
-    print
+    print()
     for pos, val in enumerate(dupeList):
-        print "%d) %s" % (pos + 1, val)
+        print("%d) %s" % (pos + 1, val))
     while True:
         choice = raw_input("[%s/%s] Keepers: " % (mainPos, mainLen)).strip()
         if not choice:
-            print ("Please enter a space/comma-separated list of numbers or "
-                   "'all'.")
+            print("Please enter a space/comma-separated list of numbers or "
+                  "'all'.")
             continue
         elif choice.lower() == 'all':
             return []
@@ -502,7 +504,7 @@ def print_defaults():
         value = DEFAULTS[key]
         if isinstance(value, (list, set)):
             value = ', '.join(value)
-        print "%*s: %s" % (maxlen, key, value)
+        print("%*s: %s" % (maxlen, key, value))
 
 def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
     """Code to handle the :option:`--delete` command-line option.
@@ -589,7 +591,10 @@ def main():
         dest="noninteractive", help="When using --delete, automatically assume"
         " 'all' for any groups with no --prefer matches rather than prompting")
     parser.add_option_group(behaviour_group)
-    parser.set_defaults(**DEFAULTS)  # pylint: disable=W0142
+    parser.set_defaults(**DEFAULTS)
+
+    # Allow pre-formatted descriptions
+    parser.formatter.format_description = lambda description: description
 
     opts, args = parser.parse_args()
 
@@ -617,7 +622,7 @@ def main():
                      opts.dry_run)
     else:
         for dupeSet in groups.values():
-            print '\n'.join(dupeSet) + '\n'
+            print('\n'.join(dupeSet) + '\n')
 
 if __name__ == '__main__':
     main()
