@@ -118,7 +118,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
         chunk_size = min(chunk_size, limit)
 
     # Chunked digest generation (conserve memory)
-    for block in iter(lambda: handle.read(chunk_size), ''):
+    for block in iter(lambda: handle.read(chunk_size), b''):
         fhash.update(block)
         read += chunk_size
         if 0 < limit <= read:
@@ -545,7 +545,9 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
 
 def main():
     """The main entry point, compatible with setuptools."""
-    # pylint: disable=bad-continuation
+    reload(sys)
+    sys.setdefaultencoding('utf-8')  # pylint: disable=no-member
+
     from optparse import OptionParser, OptionGroup
     parser = OptionParser(usage="%prog [options] <folder path> ...",
             version="%s v%s" % (__appname__, __version__))
