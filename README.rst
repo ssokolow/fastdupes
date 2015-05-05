@@ -1,9 +1,21 @@
 .. image:: https://landscape.io/github/ssokolow/fastdupes/master/landscape.png
    :target: https://landscape.io/github/ssokolow/fastdupes/master
    :alt: Code Health
+.. image:: https://codeclimate.com/github/ssokolow/fastdupes/badges/gpa.svg
+   :target: https://codeclimate.com/github/ssokolow/fastdupes
+   :alt: Code Climate
+.. image:: https://scrutinizer-ci.com/g/ssokolow/fastdupes/badges/quality-score.png?b=master
+   :target: https://scrutinizer-ci.com/g/ssokolow/fastdupes/?branch=master
+   :alt: Scrutinizer Code Quality
+.. image:: https://www.codacy.com/project/badge/dfefd4b76dfd4018a6f793d4f9ac42e4
+   :target: https://www.codacy.com/app/from_github/fastdupes
+   :alt: Codacy Badge
 .. image:: https://readthedocs.org/projects/fastdupes/badge/?version=latest
    :target: https://readthedocs.org/projects/fastdupes/?badge=latest
    :alt: Documentation Status
+.. image:: https://img.shields.io/badge/license-GPLv2-blue.svg
+   :target: https://raw.githubusercontent.com/ssokolow/fastdupes/master/LICENSE
+   :alt: GPLv2 licensed
 .. image:: https://badge.waffle.io/ssokolow/fastdupes.svg?label=ready&title=Ready
    :target: https://waffle.io/ssokolow/fastdupes
    :alt: 'Stories in Ready'
