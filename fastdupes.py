@@ -107,7 +107,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     """
     fhash, read = hashlib.sha1(), 0
     if isinstance(handle, basestring):
-        handle = file(handle, 'rb')
+        handle = open(handle, 'rb')
 
     if limit:
         chunk_size = min(chunk_size, limit)
