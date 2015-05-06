@@ -638,6 +638,8 @@ def main():
             for x in dupeSet:
                 # We need both of these so Python2 and Python3 are both happy
                 # when trying to render strings that contain invalid UTF-8
+                # TODO: Add a test suite and then push the attempted decode
+                #       as early as possible using sys.getfilesystemencoding()
                 try:
                     print(x)
                 except (UnicodeEncodeError, UnicodeDecodeError):
