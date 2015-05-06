@@ -68,6 +68,9 @@ try:
 except AttributeError:
     _stat = os.stat
 
+if sys.version_info.major >= 3:
+    basestring = str  # pylint: disable=redefined-builtin,invalid-name
+
 def multiglob_compile(globs, prefix=False):
     """Generate a single "A or B or C" regex from a list of shell globs.
 
@@ -545,8 +548,9 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
 
 def main():
     """The main entry point, compatible with setuptools."""
-    reload(sys)
-    sys.setdefaultencoding('utf-8')  # pylint: disable=no-member
+    if sys.version_info.major < 3:
+        reload(sys)
+        sys.setdefaultencoding('utf-8')  # pylint: disable=no-member
 
     from optparse import OptionParser, OptionGroup
     parser = OptionParser(usage="%prog [options] <folder path> ...",
