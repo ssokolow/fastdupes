@@ -633,8 +633,16 @@ def main():
         delete_dupes(groups, opts.prefer, not opts.noninteractive,
                      opts.dry_run)
     else:
+        enc = sys.getdefaultencoding()
         for dupeSet in groups.values():
-            print('\n'.join(dupeSet) + '\n')
+            for x in dupeSet:
+                # We need both of these so Python2 and Python3 are both happy
+                # when trying to render strings that contain invalid UTF-8
+                try:
+                    print(x)
+                except (UnicodeEncodeError, UnicodeDecodeError):
+                    print(x.encode(enc, 'backslashreplace').decode(enc))
+            print()
 
 if __name__ == '__main__':
     main()
