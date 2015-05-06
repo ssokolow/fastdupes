@@ -115,7 +115,10 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     """
     fhash, read = hashlib.sha1(), 0
     if isinstance(handle, basestring):
+        should_close = True
         handle = open(handle, 'rb')
+    else:
+        should_close = False
 
     if limit:
         chunk_size = min(chunk_size, limit)
@@ -126,6 +129,9 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
         read += chunk_size
         if 0 < limit <= read:
             break
+
+    if should_close:
+        handle.close()
 
     return want_hex and fhash.hexdigest() or fhash.digest()
 
