@@ -497,7 +497,8 @@ def print_defaults():
             value = ', '.join(value)
         print "%*s: %s" % (maxlen, key, value)
 
-def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
+def delete_dupes(groups, prefer_list=None, interactive=True, 
+                 keep_only_one=False, dry_run=False):
     """Code to handle the :option:`--delete` command-line option.
 
     :param groups: A list of groups of paths.
@@ -525,6 +526,10 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
             if interactive:
                 pruneList = pruneUI(group, pos + 1, len(groups))
                 preferred = [x for x in group if x not in pruneList]
+            elif keep_only_one:
+                pruneList = sorted(pruneList)
+                preferred = pruneList[0]
+                pruneList = pruneList[1:]
             else:
                 preferred, pruneList = pruneList, []
 
@@ -578,6 +583,10 @@ def main():
     behaviour_group.add_option('--noninteractive', action="store_true",
         dest="noninteractive", help="When using --delete, automatically assume"
         " 'all' for any groups with no --prefer matches rather than prompting")
+    behaviour_group.add_option('--keep-only-one', action="store_true",
+        dest="keep_only_one", help="When using --delete AND --noninteractive,"
+        " automatically assume that the first file is kept and rest all are "
+        "deleted for any groups with no --prefer matches rather than prompting")
     parser.add_option_group(behaviour_group)
     parser.set_defaults(**DEFAULTS)  # pylint: disable=W0142
 
@@ -596,7 +605,7 @@ def main():
 
     if opts.delete:
         delete_dupes(groups, opts.prefer, not opts.noninteractive,
-                     opts.dry_run)
+                     opts.keep_only_one, opts.dry_run)
     else:
         for dupeSet in groups.values():
             print '\n'.join(dupeSet) + '\n'
