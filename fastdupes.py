@@ -70,6 +70,7 @@ except AttributeError:
 
 if sys.version_info.major >= 3:
     basestring = str  # pylint: disable=redefined-builtin,invalid-name
+    raw_input = input  # pylint: disable=redefined-builtin,invalid-name
 
 def multiglob_compile(globs, prefix=False):
     """Generate a single "A or B or C" regex from a list of shell globs.
