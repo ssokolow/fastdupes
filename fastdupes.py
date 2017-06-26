@@ -127,7 +127,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     for block in iter(lambda: handle.read(chunk_size), b''):
         fhash.update(block)
         read += chunk_size
-        if 0 < limit <= read:
+        if limit and limit <= read:
             break
 
     if should_close:
@@ -331,7 +331,7 @@ def sizeClassifier(path, min_size=DEFAULTS['min_size']):
     return filestat.st_size
 
 @groupify
-def hashClassifier(path, limit=HEAD_SIZE):
+def hashClassifier(path, limit=None):
     """Sort a file into a group based on its SHA1 hash.
 
     :param paths: See :func:`fastdupes.groupify`
