@@ -70,6 +70,7 @@ except AttributeError:
 
 if sys.version_info.major >= 3:
     basestring = str  # pylint: disable=redefined-builtin,invalid-name
+    raw_input = input  # pylint: disable=redefined-builtin,invalid-name
 
 def multiglob_compile(globs, prefix=False):
     """Generate a single "A or B or C" regex from a list of shell globs.
@@ -127,7 +128,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     for block in iter(lambda: handle.read(chunk_size), b''):
         fhash.update(block)
         read += chunk_size
-        if 0 < limit <= read:
+        if limit and limit <= read:
             break
 
     if should_close:
@@ -331,7 +332,7 @@ def sizeClassifier(path, min_size=DEFAULTS['min_size']):
     return filestat.st_size
 
 @groupify
-def hashClassifier(path, limit=HEAD_SIZE):
+def hashClassifier(path, limit=None):
     """Sort a file into a group based on its SHA1 hash.
 
     :param paths: See :func:`fastdupes.groupify`
