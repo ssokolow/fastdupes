@@ -107,17 +107,23 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
     """
     fhash, read = hashlib.sha1(), 0
     if isinstance(handle, basestring):
-        handle = file(handle, 'rb')
+        try:
+            handle = file(handle, 'rb')
+        except IOError:
+            pass
 
     if limit:
         chunk_size = min(chunk_size, limit)
 
     # Chunked digest generation (conserve memory)
-    for block in iter(lambda: handle.read(chunk_size), ''):
-        fhash.update(block)
-        read += chunk_size
-        if 0 < limit <= read:
-            break
+    try:
+        for block in iter(lambda: handle.read(chunk_size), ''):
+            fhash.update(block)
+            read += chunk_size
+            if 0 < limit <= read:
+                break
+    except AttributeError:
+        pass
 
     return want_hex and fhash.hexdigest() or fhash.digest()
 
@@ -303,7 +309,10 @@ def sizeClassifier(path, min_size=DEFAULTS['min_size']):
         calls. It's a fairly significant percentage of the time taken according
         to the profiler.
     """
-    filestat = _stat(path)
+    try:
+        filestat = _stat(path)
+    except OSError:
+        return  # Skip missing
     if stat.S_ISLNK(filestat.st_mode):
         return  # Skip symlinks.
 
