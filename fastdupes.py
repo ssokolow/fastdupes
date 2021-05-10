@@ -530,9 +530,13 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
 
         assert preferred  # Safety check
         for path in pruneList:
-            print "Removing %s" % path
             if not dry_run:
-                os.remove(path)
+                try:
+                    os.remove(path)
+                    print "Removed %s" % path
+
+                except OSError as ose:
+                    print "%s" % ose
 
 def main():
     """The main entry point, compatible with setuptools."""
