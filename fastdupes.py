@@ -440,8 +440,20 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
     """
     dupeList = sorted(dupeList)
     print
+    num = 0
     for pos, val in enumerate(dupeList):
-        print "%d) %s" % (pos + 1, val)
+        deleted_str = ''
+        if not os.path.exists(val):
+            deleted_str = ' [Deleted]'
+
+        else:
+            num += 1
+
+        print "%d) %s%s" % (pos + 1, val, deleted_str)
+
+    if num < 2:
+        return []
+
     while True:
         choice = raw_input("[%s/%s] Keepers: " % (mainPos, mainLen)).strip()
         if not choice:
