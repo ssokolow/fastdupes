@@ -49,7 +49,7 @@ import hashlib
 #: Default settings used by :mod:`optparse` and some functions
 DEFAULTS = {
     'delete': False,
-    'exclude': ['*/.svn', '*/.bzr', '*/.git', '*/.hg', '*/.repo'],
+    'exclude': ['*/.svn', '*/.bzr', '*/.git', '*/.hg', '*/.repo', '*/.vscode-server'],
     'min_size': 25,  #: Only check files this big or bigger.
 }
 CHUNK_SIZE = 2 ** 16  #: Size for chunked reads from file handles
