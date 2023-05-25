@@ -106,8 +106,7 @@ def hashFile(handle, want_hex=False, limit=None, chunk_size=CHUNK_SIZE):
         in
     """
     fhash, read = hashlib.sha1(), 0
-    if isinstance(handle, basestring):
-        handle = file(handle, 'rb')
+    handle = open(handle, 'rb')
 
     if limit:
         chunk_size = min(chunk_size, limit)
@@ -440,13 +439,25 @@ def pruneUI(dupeList, mainPos=1, mainLen=1):
     """
     dupeList = sorted(dupeList)
     print
+    num = 0
     for pos, val in enumerate(dupeList):
-        print "%d) %s" % (pos + 1, val)
+        deleted_str = ''
+        if not os.path.exists(val):
+            deleted_str = ' [Deleted]'
+
+        else:
+            num += 1
+
+        print("%d) %s%s" % (pos + 1, val, deleted_str))
+
+    if num < 2:
+        return []
+
     while True:
-        choice = raw_input("[%s/%s] Keepers: " % (mainPos, mainLen)).strip()
+        choice = str(input("[%s/%s] Keepers: " % (mainPos, mainLen))).strip()
         if not choice:
-            print ("Please enter a space/comma-separated list of numbers or "
-                   "'all'.")
+            print("Please enter a space/comma-separated list of numbers or "
+                  "'all'.")
             continue
         elif choice.lower() == 'all':
             return []
@@ -495,7 +506,7 @@ def print_defaults():
         value = DEFAULTS[key]
         if isinstance(value, (list, set)):
             value = ', '.join(value)
-        print "%*s: %s" % (maxlen, key, value)
+        print("%*s: %s" % (maxlen, key, value))
 
 def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
     """Code to handle the :option:`--delete` command-line option.
@@ -530,9 +541,13 @@ def delete_dupes(groups, prefer_list=None, interactive=True, dry_run=False):
 
         assert preferred  # Safety check
         for path in pruneList:
-            print "Removing %s" % path
             if not dry_run:
-                os.remove(path)
+                try:
+                    os.remove(path)
+                    print("Removed %s" % path)
+
+                except OSError as ose:
+                    print("%s" % ose)
 
 def main():
     """The main entry point, compatible with setuptools."""
@@ -599,7 +614,7 @@ def main():
                      opts.dry_run)
     else:
         for dupeSet in groups.values():
-            print '\n'.join(dupeSet) + '\n'
+            print('\n'.join(dupeSet) + '\n')
 
 if __name__ == '__main__':
     main()
